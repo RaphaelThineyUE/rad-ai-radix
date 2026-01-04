@@ -10,6 +10,7 @@ A full-stack breast cancer radiology analysis platform with AI-powered insights.
 - JWT Authentication
 - OpenAI API Integration
 - PDF Processing (pdf-parse)
+- OCR Support (Tesseract.js + pdf2pic) for scanned PDFs
 - Multer for file uploads
 
 ### Frontend
@@ -127,6 +128,8 @@ Frontend will run on http://localhost:5173
 
 ### Report Analysis
 - Upload PDF radiology reports
+- Automatic OCR for scanned PDFs using Tesseract.js
+- Intelligent fallback: standard text extraction first, OCR if needed
 - AI-powered extraction of:
   - BI-RADS assessment
   - Breast density

@@ -1,5 +1,13 @@
 import pdf from 'pdf-parse';
 import fs from 'fs/promises';
+import { createWorker } from 'tesseract.js';
+import { fromPath } from 'pdf2pic';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import os from 'os';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // OpenAI API integration - using fetch for compatibility
 async function callOpenAI(prompt, systemMessage) {
@@ -41,12 +49,135 @@ async function callOpenAI(prompt, systemMessage) {
   }
 }
 
-// Extract text from PDF
+// Check if PDF text content is sufficient (not just scanned images)
+function hasValidTextContent(text) {
+  if (!text) return false;
+  
+  // Remove whitespace and check if there's substantial text
+  const cleanText = text.trim();
+  
+  // If less than 100 characters, likely a scanned document
+  if (cleanText.length < 100) return false;
+  
+  // Check for meaningful words (at least 10 words)
+  const words = cleanText.split(/\s+/).filter(word => word.length > 2);
+  if (words.length < 10) return false;
+  
+  return true;
+}
+
+// Extract text from PDF using OCR (for scanned PDFs)
+async function extractTextWithOCR(filePath) {
+  console.log('PDF appears to be scanned or has insufficient text. Attempting OCR extraction...');
+  
+  let tempDir = null;
+  let worker = null;
+  
+  try {
+    // Create temporary directory for images
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pdf-ocr-'));
+    
+    // Convert PDF pages to images
+    const options = {
+      density: 300, // DPI for better OCR quality
+      saveFilename: 'page',
+      savePath: tempDir,
+      format: 'png',
+      width: 2000,
+      height: 2000
+    };
+    
+    const convert = fromPath(filePath, options);
+    
+    // Get number of pages
+    const dataBuffer = await fs.readFile(filePath);
+    const pdfData = await pdf(dataBuffer);
+    const numPages = pdfData.numpages;
+    
+    console.log(`Processing ${numPages} pages with OCR...`);
+    
+    // Initialize Tesseract worker
+    worker = await createWorker('eng');
+    
+    let extractedText = '';
+    
+    // Process each page
+    for (let pageNum = 1; pageNum <= Math.min(numPages, 20); pageNum++) { // Limit to 20 pages
+      try {
+        // Convert page to image
+        const result = await convert(pageNum, { responseType: 'image' });
+        const imagePath = result.path;
+        
+        // Perform OCR
+        const { data: { text } } = await worker.recognize(imagePath);
+        extractedText += `\n--- Page ${pageNum} ---\n${text}\n`;
+        
+        // Clean up image file
+        try {
+          await fs.unlink(imagePath);
+        } catch (cleanupError) {
+          console.error(`Error cleaning up image ${imagePath}:`, cleanupError);
+        }
+        
+        console.log(`OCR completed for page ${pageNum}/${numPages}`);
+      } catch (pageError) {
+        console.error(`Error processing page ${pageNum}:`, pageError);
+        // Continue with next page
+      }
+    }
+    
+    return extractedText.trim();
+  } catch (error) {
+    console.error('OCR extraction error:', error);
+    throw error;
+  } finally {
+    // Cleanup
+    if (worker) {
+      await worker.terminate();
+    }
+    
+    if (tempDir) {
+      try {
+        // Remove temporary directory
+        const files = await fs.readdir(tempDir);
+        for (const file of files) {
+          await fs.unlink(path.join(tempDir, file));
+        }
+        await fs.rmdir(tempDir);
+      } catch (cleanupError) {
+        console.error('Error cleaning up temp directory:', cleanupError);
+      }
+    }
+  }
+}
+
+// Extract text from PDF with automatic OCR fallback
 export async function extractPDFText(filePath) {
   try {
+    // First, try standard PDF text extraction
     const dataBuffer = await fs.readFile(filePath);
     const data = await pdf(dataBuffer);
-    return data.text;
+    const extractedText = data.text;
+    
+    // Check if extracted text is sufficient
+    if (hasValidTextContent(extractedText)) {
+      console.log('PDF text extracted successfully using standard extraction');
+      return extractedText;
+    }
+    
+    // If not enough text, try OCR
+    console.log('Insufficient text from standard extraction, attempting OCR...');
+    const ocrText = await extractTextWithOCR(filePath);
+    
+    if (hasValidTextContent(ocrText)) {
+      console.log('PDF text extracted successfully using OCR');
+      return ocrText;
+    }
+    
+    // If still no valid text, return what we have
+    console.warn('Unable to extract sufficient text from PDF');
+    return extractedText || ocrText || '';
+    
   } catch (error) {
     console.error('PDF extraction error:', error);
     return null;

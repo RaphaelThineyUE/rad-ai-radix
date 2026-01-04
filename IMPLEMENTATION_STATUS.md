@@ -49,6 +49,9 @@
 #### Services
 - **AI Service**: OpenAI integration with structured extraction
   - PDF text extraction using pdf-parse
+  - **OCR Support**: Automatic OCR for scanned PDFs using Tesseract.js
+  - Intelligent detection: uses OCR fallback when standard extraction yields insufficient text
+  - Multi-page OCR processing (up to 20 pages)
   - BI-RADS classification (0-6)
   - Breast density assessment
   - Findings extraction with evidence
