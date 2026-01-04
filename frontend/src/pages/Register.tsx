@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import type { React } from 'react';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -15,14 +16,14 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
