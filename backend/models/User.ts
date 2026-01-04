@@ -1,6 +1,15 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
-const userSchema = new mongoose.Schema({
+export interface IUser extends Document {
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role: 'admin' | 'user';
+  created_date: Date;
+  updated_date: Date;
+}
+
+const userSchema = new Schema<IUser>({
   email: {
     type: String,
     required: true,
@@ -33,10 +42,10 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre('save', function(next) {
-  this.updated_date = Date.now();
+  this.updated_date = new Date();
   next();
 });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model<IUser>('User', userSchema);
 
 export default User;

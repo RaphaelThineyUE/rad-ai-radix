@@ -1,12 +1,57 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
-const radiologyReportSchema = new mongoose.Schema({
+export interface IRadiologyReport extends Document {
+  created_by: string;
+  patient_id: mongoose.Types.ObjectId;
+  filename: string;
+  file_url?: string;
+  file_size?: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  summary?: string;
+  birads?: {
+    value?: number;
+    confidence?: 'low' | 'medium' | 'high';
+    evidence?: string[];
+  };
+  breast_density?: {
+    value?: string;
+    evidence?: string[];
+  };
+  exam?: {
+    type?: string;
+    laterality?: string;
+    evidence?: string[];
+  };
+  comparison?: {
+    prior_exam_date?: string;
+    evidence?: string[];
+  };
+  findings?: Array<{
+    laterality?: string;
+    location?: string;
+    description?: string;
+    assessment?: string;
+    evidence?: string[];
+  }>;
+  recommendations?: Array<{
+    action?: string;
+    timeframe?: string;
+    evidence?: string[];
+  }>;
+  red_flags?: string[];
+  processing_time_ms?: number;
+  raw_text?: string;
+  created_date: Date;
+  updated_date: Date;
+}
+
+const radiologyReportSchema = new Schema<IRadiologyReport>({
   created_by: {
     type: String,
     required: true
   },
   patient_id: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Patient',
     required: true
   },
@@ -87,10 +132,10 @@ const radiologyReportSchema = new mongoose.Schema({
 });
 
 radiologyReportSchema.pre('save', function(next) {
-  this.updated_date = Date.now();
+  this.updated_date = new Date();
   next();
 });
 
-const RadiologyReport = mongoose.model('RadiologyReport', radiologyReportSchema);
+const RadiologyReport = mongoose.model<IRadiologyReport>('RadiologyReport', radiologyReportSchema);
 
 export default RadiologyReport;

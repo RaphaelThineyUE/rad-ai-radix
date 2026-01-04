@@ -9,8 +9,21 @@ import os from 'os';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+interface OpenAIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface OpenAIResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
+
 // OpenAI API integration - using fetch for compatibility
-async function callOpenAI(prompt, systemMessage) {
+async function callOpenAI(prompt: string, systemMessage: string): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
@@ -29,7 +42,7 @@ async function callOpenAI(prompt, systemMessage) {
         messages: [
           { role: 'system', content: systemMessage },
           { role: 'user', content: prompt }
-        ],
+        ] as OpenAIMessage[],
         temperature: 0.3,
         response_format: { type: 'json_object' }
       })
@@ -41,7 +54,7 @@ async function callOpenAI(prompt, systemMessage) {
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as OpenAIResponse;
     return JSON.parse(data.choices[0].message.content);
   } catch (error) {
     console.error('OpenAI call error:', error);
@@ -50,7 +63,7 @@ async function callOpenAI(prompt, systemMessage) {
 }
 
 // Check if PDF text content is sufficient (not just scanned images)
-function hasValidTextContent(text) {
+function hasValidTextContent(text: string | null): boolean {
   if (!text) return false;
   
   // Remove whitespace and check if there's substantial text
@@ -67,10 +80,10 @@ function hasValidTextContent(text) {
 }
 
 // Extract text from PDF using OCR (for scanned PDFs)
-async function extractTextWithOCR(filePath) {
+async function extractTextWithOCR(filePath: string): Promise<string> {
   console.log('PDF appears to be scanned or has insufficient text. Attempting OCR extraction...');
   
-  let tempDir = null;
+  let tempDir: string | null = null;
   let worker = null;
   
   try {
@@ -82,7 +95,7 @@ async function extractTextWithOCR(filePath) {
       density: 300, // DPI for better OCR quality
       saveFilename: 'page',
       savePath: tempDir,
-      format: 'png',
+      format: 'png' as const,
       width: 2000,
       height: 2000
     };
@@ -152,7 +165,7 @@ async function extractTextWithOCR(filePath) {
 }
 
 // Extract text from PDF with automatic OCR fallback
-export async function extractPDFText(filePath) {
+export async function extractPDFText(filePath: string): Promise<string | null> {
   try {
     // First, try standard PDF text extraction
     const dataBuffer = await fs.readFile(filePath);
@@ -185,7 +198,7 @@ export async function extractPDFText(filePath) {
 }
 
 // Analyze report with AI
-export async function analyzeReport(pdfText) {
+export async function analyzeReport(pdfText: string): Promise<any> {
   const systemMessage = 'You are a medical AI assistant specialized in analyzing breast radiology reports. Extract structured data accurately and provide evidence as exact quotes from the report. Return only valid JSON.';
   
   const prompt = `Analyze this breast radiology report and extract structured data. 
@@ -245,7 +258,7 @@ Evidence must be exact quotes from the report. BI-RADS must be 0-6. Flag anythin
 }
 
 // Generate patient-friendly summary
-export async function generateSummary(extractedData) {
+export async function generateSummary(extractedData: any): Promise<string> {
   const systemMessage = 'You are a medical communicator who explains radiology results to patients in a clear, compassionate way.';
   
   const prompt = `Create a patient-friendly 2-4 sentence summary of this radiology report explaining key findings, BI-RADS meaning, and what patient should know. Be honest but reassuring.
@@ -259,7 +272,7 @@ Return JSON with: { "summary": "<patient friendly summary>" }`;
 }
 
 // Consolidate multiple reports
-export async function consolidateReports(reports) {
+export async function consolidateReports(reports: any[]): Promise<any> {
   const systemMessage = 'You are a medical AI assistant specialized in analyzing patterns across multiple breast radiology reports.';
   
   const reportsData = reports.map(r => ({
@@ -279,7 +292,7 @@ Return JSON with: { "consolidated_summary": "<comprehensive summary>", "overall_
 }
 
 // Compare treatment options
-export async function compareTreatments(patientData, treatmentOptions) {
+export async function compareTreatments(patientData: any, treatmentOptions: string[]): Promise<any> {
   const systemMessage = 'You are a medical AI assistant specialized in breast cancer treatment planning.';
   
   const prompt = `Compare these treatment options for this breast cancer patient. For each option provide: recommendation score (1-10), efficacy rate, benefits, side effects, duration, considerations. Include overall recommendation and disclaimer.

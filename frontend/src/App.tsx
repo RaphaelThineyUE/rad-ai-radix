@@ -10,6 +10,7 @@ import PatientList from './pages/PatientList';
 import PatientDetail from './pages/PatientDetail';
 import PatientAnalytics from './pages/PatientAnalytics';
 import HowTo from './pages/HowTo';
+import type { ReactNode } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,7 +21,11 @@ const queryClient = new QueryClient({
   }
 });
 
-function ProtectedRoute({ children }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -31,7 +36,7 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <>{children}</>;
 }
 
 function AppRoutes() {

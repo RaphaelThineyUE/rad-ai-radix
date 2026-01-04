@@ -1,9 +1,9 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -116,9 +116,9 @@ router.post('/login',
 );
 
 // Get current user
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const user = await User.findById(req.user.userId).select('-password_hash');
+    const user = await User.findById(req.user?.userId).select('-password_hash');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -135,19 +135,19 @@ router.patch('/me', authMiddleware,
     body('full_name').optional().trim().notEmpty(),
     body('email').optional().isEmail().normalizeEmail()
   ],
-  async (req, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const updates = {};
+      const updates: any = {};
       if (req.body.full_name) updates.full_name = req.body.full_name;
       if (req.body.email) updates.email = req.body.email;
 
       const user = await User.findByIdAndUpdate(
-        req.user.userId,
+        req.user?.userId,
         updates,
         { new: true }
       ).select('-password_hash');
