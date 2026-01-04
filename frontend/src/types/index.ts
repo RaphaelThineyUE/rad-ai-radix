@@ -61,7 +61,3 @@ export interface AuthResponse {
 export interface ApiError {
   error: string;
 }
-
-export interface RequestOptions extends RequestInit {
-  headers?: Record<string, string>;
-}

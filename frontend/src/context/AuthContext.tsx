@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { apiClient } from '../lib/api';
 import type { User } from '../types';
 
@@ -17,19 +17,14 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check for stored token on mount
+  // Use lazy initialization to get initial user from localStorage
+  const [user, setUser] = useState<User | null>(() => {
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-    
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
+    return token && storedUser ? JSON.parse(storedUser) : null;
+  });
+  // Loading is false by default since we initialize synchronously
+  const [loading] = useState(false);
 
   const login = async (email: string, password: string) => {
     const response = await apiClient.login(email, password);
@@ -60,6 +55,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {

@@ -3,11 +3,16 @@ import type {
   Patient, 
   RadiologyReport, 
   TreatmentRecord, 
-  AuthResponse, 
-  RequestOptions 
+  AuthResponse 
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+interface RequestOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
 
 class ApiClient {
   private baseURL: string;
