@@ -1,6 +1,26 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
-const patientSchema = new mongoose.Schema({
+export interface IPatient extends Document {
+  created_by: string;
+  full_name: string;
+  date_of_birth: Date;
+  gender: 'Male' | 'Female' | 'Other';
+  ethnicity?: string;
+  diagnosis_date: Date;
+  cancer_type: string;
+  cancer_stage: 'Stage 0' | 'Stage I' | 'Stage II' | 'Stage III' | 'Stage IV' | 'Unknown';
+  tumor_size_cm?: number;
+  lymph_node_positive: boolean;
+  er_status: 'Positive' | 'Negative' | 'Unknown';
+  pr_status: 'Positive' | 'Negative' | 'Unknown';
+  her2_status: 'Positive' | 'Negative' | 'Unknown';
+  menopausal_status?: string;
+  initial_treatment_plan?: string;
+  created_date: Date;
+  updated_date: Date;
+}
+
+const patientSchema = new Schema<IPatient>({
   created_by: {
     type: String,
     required: true
@@ -79,10 +99,10 @@ const patientSchema = new mongoose.Schema({
 });
 
 patientSchema.pre('save', function(next) {
-  this.updated_date = Date.now();
+  this.updated_date = new Date();
   next();
 });
 
-const Patient = mongoose.model('Patient', patientSchema);
+const Patient = mongoose.model<IPatient>('Patient', patientSchema);
 
 export default Patient;
