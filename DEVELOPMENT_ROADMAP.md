@@ -12,9 +12,9 @@ This guide provides step-by-step instructions for completing the remaining featu
 
 ### 1.1 File Dropzone Component
 
-**File**: `frontend/src/components/reports/FileDropzone.jsx`
+**File**: `frontend/src/components/reports/FileDropzone.tsx`
 
-```jsx
+```tsx
 import { useCallback, useState } from 'react';
 import { Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -82,9 +82,9 @@ export default function FileDropzone({ patientId, onUploadSuccess }) {
 
 ### 1.2 Report Card Component
 
-**File**: `frontend/src/components/reports/ReportCard.jsx`
+**File**: `frontend/src/components/reports/ReportCard.tsx`
 
-```jsx
+```tsx
 import { format } from 'date-fns';
 import { FileText, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -146,7 +146,7 @@ export default function ReportCard({ report, onClick }) {
 
 ### 1.3 Report Detail Slide-Over
 
-**File**: `frontend/src/components/reports/ReportDetail.jsx`
+**File**: `frontend/src/components/reports/ReportDetail.tsx`
 
 Use Radix UI Dialog component for slide-over panel. Display:
 - Report header with close button
@@ -160,9 +160,9 @@ Use Radix UI Dialog component for slide-over panel. Display:
 
 ### 1.4 Update Home Page
 
-**File**: `frontend/src/pages/Home.jsx`
+**File**: `frontend/src/pages/Home.tsx`
 
-```jsx
+```tsx
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
@@ -208,7 +208,7 @@ export default function Home() {
 
 ### 2.1 Add Patient Dialog
 
-**File**: `frontend/src/components/patient/AddPatientDialog.jsx`
+**File**: `frontend/src/components/patient/AddPatientDialog.tsx`
 
 Use:
 - Radix UI Dialog
@@ -229,7 +229,7 @@ Fields:
 
 ### 2.2 Patient List Implementation
 
-**File**: `frontend/src/pages/PatientList.jsx`
+**File**: `frontend/src/pages/PatientList.tsx`
 
 Features:
 - Search by name
@@ -241,7 +241,7 @@ Features:
 
 ### 2.3 Patient Detail Tabs
 
-**File**: `frontend/src/pages/PatientDetail.jsx`
+**File**: `frontend/src/pages/PatientDetail.tsx`
 
 Tabs:
 1. **Overview**: Demographics and biomarkers
@@ -254,11 +254,11 @@ Tabs:
 
 ### 3.1 Analytics Page with Charts
 
-**File**: `frontend/src/pages/PatientAnalytics.jsx`
+**File**: `frontend/src/pages/PatientAnalytics.tsx`
 
 Use Recharts for visualizations:
 
-```jsx
+```tsx
 import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 // Age distribution chart
@@ -269,7 +269,7 @@ import { BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Leg
 ```
 
 Data Processing:
-```jsx
+```tsx
 function processPatientData(patients) {
   const stageData = patients.reduce((acc, p) => {
     acc[p.cancer_stage] = (acc[p.cancer_stage] || 0) + 1;
@@ -285,7 +285,7 @@ function processPatientData(patients) {
 
 ### 3.2 Treatment Comparison Component
 
-**File**: `frontend/src/components/patient/TreatmentComparison.jsx`
+**File**: `frontend/src/components/patient/TreatmentComparison.tsx`
 
 Features:
 - Input form for up to 5 treatment options
@@ -298,7 +298,7 @@ Features:
 
 ### 4.1 Consolidated Report Analysis
 
-**File**: `frontend/src/components/reports/ConsolidatedView.jsx`
+**File**: `frontend/src/components/reports/ConsolidatedView.tsx`
 
 Trigger: Button appears when patient has 2+ completed reports
 
@@ -309,7 +309,7 @@ Features:
 - List of individual reports included
 - Export as JSON button
 
-```jsx
+```tsx
 async function handleConsolidate() {
   setLoading(true);
   try {
@@ -325,7 +325,7 @@ async function handleConsolidate() {
 
 ### 4.2 Patient Timeline
 
-**File**: `frontend/src/components/patient/PatientTimeline.jsx`
+**File**: `frontend/src/components/patient/PatientTimeline.tsx`
 
 Display:
 - Diagnosis date (starting point)
@@ -394,7 +394,7 @@ test('should upload and process report', async ({ page }) => {
 
 Add error boundaries:
 
-```jsx
+```tsx
 class ErrorBoundary extends React.Component {
   state = { hasError: false };
 
@@ -415,7 +415,7 @@ class ErrorBoundary extends React.Component {
 
 Add skeleton loaders using Tailwind:
 
-```jsx
+```tsx
 function ReportCardSkeleton() {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 animate-pulse">
@@ -430,7 +430,7 @@ function ReportCardSkeleton() {
 
 Add mobile-specific styles:
 
-```jsx
+```tsx
 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
 ```
 

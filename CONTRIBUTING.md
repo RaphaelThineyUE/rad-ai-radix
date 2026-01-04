@@ -29,13 +29,13 @@ npm run dev
 
 ```
 rad-ai-radix/
-├── backend/              # Node.js + Express API
+├── backend/              # Node.ts + Express API
 │   ├── models/          # Mongoose schemas
 │   ├── routes/          # API endpoints
 │   ├── middleware/      # Auth and other middleware
 │   ├── services/        # Business logic (AI service)
 │   ├── __tests__/       # Jest tests
-│   └── server.js        # Express server
+│   └── server.ts        # Express server
 │
 ├── frontend/            # React + Vite application
 │   ├── src/
@@ -54,7 +54,7 @@ rad-ai-radix/
 ### Backend (JavaScript)
 - Use ES6 modules (`import/export`)
 - Async/await for asynchronous code
-- Express.js routing conventions
+- Express.ts routing conventions
 - Mongoose for MongoDB
 - Jest for testing
 
@@ -78,7 +78,7 @@ export default router;
 
 ### Frontend (React + JSX)
 - Functional components with hooks
-- Component files use `.jsx` extension
+- Component files use `.tsx` extension
 - Use TailwindCSS for styling
 - React Query for data fetching
 - Framer Motion for animations
@@ -116,7 +116,7 @@ export default function MyComponent() {
 
 1. **Create/Update Model** (if needed)
 ```javascript
-// backend/models/NewModel.js
+// backend/models/NewModel.ts
 import mongoose from 'mongoose';
 
 const schema = new mongoose.Schema({
@@ -129,10 +129,10 @@ export default mongoose.model('NewModel', schema);
 
 2. **Create Route Handler**
 ```javascript
-// backend/routes/newroutes.js
+// backend/routes/newroutes.ts
 import express from 'express';
-import { authMiddleware } from '../middleware/auth.js';
-import Model from '../models/NewModel.js';
+import { authMiddleware } from '../middleware/auth.ts';
+import Model from '../models/NewModel.ts';
 
 const router = express.Router();
 
@@ -147,16 +147,16 @@ export default router;
 
 3. **Register Route in Server**
 ```javascript
-// backend/server.js
-import newRoutes from './routes/newroutes.js';
+// backend/server.ts
+import newRoutes from './routes/newroutes.ts';
 app.use('/api/newroutes', newRoutes);
 ```
 
 4. **Add Tests**
 ```javascript
-// backend/__tests__/newroutes.test.js
+// backend/__tests__/newroutes.test.ts
 import request from 'supertest';
-import app from '../server.js';
+import app from '../server.ts';
 
 describe('New Routes', () => {
   test('should work', async () => {
@@ -170,7 +170,7 @@ describe('New Routes', () => {
 
 1. **Create Component**
 ```jsx
-// frontend/src/components/category/NewComponent.jsx
+// frontend/src/components/category/NewComponent.tsx
 export default function NewComponent({ prop1, prop2 }) {
   return (
     <div className="component-container">
@@ -190,7 +190,7 @@ import NewComponent from '../components/category/NewComponent';
 
 3. **Add E2E Test**
 ```javascript
-// frontend/tests/newfeature.spec.js
+// frontend/tests/newfeature.spec.ts
 import { test, expect } from '@playwright/test';
 
 test('new feature works', async ({ page }) => {
@@ -206,7 +206,7 @@ test('new feature works', async ({ page }) => {
 cd backend
 npm test                    # Run all tests
 npm test -- --watch        # Watch mode
-npm test -- auth.test.js   # Run specific test
+npm test -- auth.test.ts   # Run specific test
 ```
 
 ### Frontend E2E Tests
@@ -322,11 +322,11 @@ Use Framer Motion for:
 
 ### Adding a New Page
 1. Create page component in `frontend/src/pages/`
-2. Add route in `frontend/src/App.jsx`
-3. Add navigation link in `frontend/src/components/layout/Layout.jsx`
+2. Add route in `frontend/src/App.tsx`
+3. Add navigation link in `frontend/src/components/layout/Layout.tsx`
 
 ### Adding API Client Method
-Update `frontend/src/lib/api.js`:
+Update `frontend/src/lib/api.ts`:
 ```javascript
 async newMethod(params) {
   return this.request('/endpoint', {
@@ -370,7 +370,7 @@ mongo mongodb://localhost:27017/radreport-ai
 
 ## Resources
 
-- [Express.js Docs](https://expressjs.com/)
+- [Express.ts Docs](https://expressjs.com/)
 - [Mongoose Docs](https://mongoosejs.com/)
 - [React Docs](https://react.dev/)
 - [TailwindCSS Docs](https://tailwindcss.com/)
