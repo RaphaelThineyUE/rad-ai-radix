@@ -137,3 +137,16 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Backend uploads directory
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Package locks
+package-lock.json
+yarn.lock
