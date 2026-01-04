@@ -150,3 +150,5 @@ playwright/.cache/
 # Package locks
 package-lock.json
 yarn.lock
+/backend/.env.example
+/frontend/.env.example

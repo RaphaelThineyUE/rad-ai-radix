@@ -94,7 +94,7 @@ cd frontend
 
 2. Install dependencies:
 ```bash
-npm install
+n
 ```
 
 3. Create `.env` file:
