@@ -1,10 +1,23 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient } from '../lib/api';
+import type { User } from '../types';
 
-const AuthContext = createContext(null);
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<{ token: string; user: User }>;
+  register: (email: string, full_name: string, password: string) => Promise<{ token: string; user: User }>;
+  logout: () => void;
+  loading: boolean;
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+const AuthContext = createContext<AuthContextType | null>(null);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +31,7 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email: string, password: string) => {
     const response = await apiClient.login(email, password);
     localStorage.setItem('token', response.token);
     localStorage.setItem('user', JSON.stringify(response.user));
@@ -26,7 +39,7 @@ export function AuthProvider({ children }) {
     return response;
   };
 
-  const register = async (email, full_name, password) => {
+  const register = async (email: string, full_name: string, password: string) => {
     const response = await apiClient.register(email, full_name, password);
     localStorage.setItem('token', response.token);
     localStorage.setItem('user', JSON.stringify(response.user));
@@ -47,7 +60,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
