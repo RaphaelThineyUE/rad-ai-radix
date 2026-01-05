@@ -116,7 +116,7 @@ class ApiClient {
   }
 
   // Report endpoints
-  async uploadFile(file: File): Promise<{ file_path: string; extracted_text?: string }> {
+  async uploadFile(file: File): Promise<{ filename: string; file_url: string; file_size: number }> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -137,8 +137,8 @@ class ApiClient {
     return response.json();
   }
 
-  async createReport(data: Partial<RadiologyReport>): Promise<{ report: RadiologyReport }> {
-    return this.request<{ report: RadiologyReport }>('/reports', {
+  async createReport(data: Partial<RadiologyReport>): Promise<RadiologyReport> {
+    return this.request<RadiologyReport>('/reports', {
       method: 'POST',
       body: JSON.stringify(data)
     });
