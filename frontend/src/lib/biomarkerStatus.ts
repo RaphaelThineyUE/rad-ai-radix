@@ -1,7 +1,5 @@
 /**
  * Represents the possible status values for a biomarker test result.
- * 
- * @typedef {('positive' | 'negative' | 'unknown')} BiomarkerStatus
  */
 export type BiomarkerStatus = 'positive' | 'negative' | 'unknown';
 
