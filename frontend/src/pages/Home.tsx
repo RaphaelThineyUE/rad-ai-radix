@@ -1,22 +1,21 @@
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { FileText, Loader2 } from 'lucide-react';
-import { apiClient } from '../lib/api';
-import FileDropzone from '../components/reports/FileDropzone';
-import type { RadiologyReport } from '../types';
+import ReportCard from '../components/reports/ReportCard';
 
-interface StatusCounts {
-  total: number;
-  completed: number;
-  needsReview: number;
-}
-
-const statusStyles: Record<string, string> = {
-  completed: 'bg-green-100 text-green-800',
-  processing: 'bg-blue-100 text-blue-800',
-  failed: 'bg-red-100 text-red-800',
-  pending: 'bg-gray-100 text-gray-800'
-};
+const recentReports = [
+  {
+    id: 'rr-001',
+    patientName: 'Jamie Rivera',
+    reportDate: 'Aug 12, 2024',
+    birads: 2 as const,
+    status: 'Reviewed',
+  },
+  {
+    id: 'rr-002',
+    patientName: 'Morgan Lee',
+    reportDate: 'Aug 08, 2024',
+    birads: 4 as const,
+    status: 'Needs Review',
+  },
+];
 
 export default function Home() {
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
