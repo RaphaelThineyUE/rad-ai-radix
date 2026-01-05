@@ -238,7 +238,7 @@ export default function PatientAnalytics() {
                   <Tooltip
                     formatter={(value: number, name: string) => [
                       `${value} treatments`,
-                      name === 'Completed' ? 'Completed' : 'Total'
+                      name
                     ]}
                   />
                   <Legend />
