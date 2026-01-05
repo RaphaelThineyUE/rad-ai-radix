@@ -66,7 +66,8 @@ export default function PatientAnalytics() {
 
   const statusStats = useMemo(() => {
     const counts = treatments.reduce<Record<string, number>>((acc, treatment) => {
-      const statusLabel = treatment.status?.trim() ? treatment.status.trim() : 'Unknown';
+      const trimmedStatus = treatment.status?.trim();
+      const statusLabel = trimmedStatus || 'Unknown';
       acc[statusLabel] = (acc[statusLabel] || 0) + 1;
       return acc;
     }, {});
