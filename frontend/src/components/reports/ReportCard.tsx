@@ -1,62 +1,111 @@
-export type ReportCardProps = {
-  patientName: string;
-  reportDate: string;
-  birads: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  status: string;
-  onSelect?: () => void;
+import { format } from 'date-fns';
+import { AlertTriangle, FileText } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+import { getBiradsColorClass } from '../../lib/birads';
+
+interface ReportCardProps {
+  report: {
+    filename?: string;
+    created_date?: string;
+    createdAt?: string;
+    birads?: {
+      value?: number | null;
+    };
+    red_flags?: Array<unknown>;
+    status?: string;
+  };
+  onClick?: () => void;
+}
+
+const getStatusClasses = (status?: string): string => {
+  if (status === 'completed') {
+    return 'bg-green-100 text-green-800';
+  }
+
+  if (status === 'processing') {
+    return 'bg-blue-100 text-blue-800';
+  }
+
+  if (status === 'failed') {
+    return 'bg-red-100 text-red-800';
+  }
+
+  return 'bg-gray-100 text-gray-800';
 };
 
-const biradsStyles: Record<ReportCardProps['birads'], string> = {
-  0: 'bg-slate-100 text-slate-700 border-slate-200',
-  1: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  2: 'bg-green-100 text-green-700 border-green-200',
-  3: 'bg-amber-100 text-amber-700 border-amber-200',
-  4: 'bg-orange-100 text-orange-700 border-orange-200',
-  5: 'bg-red-100 text-red-700 border-red-200',
-  6: 'bg-purple-100 text-purple-700 border-purple-200',
-};
+export default function ReportCard({ report, onClick }: ReportCardProps) {
+  const createdDate = report.created_date ?? report.createdAt;
+  const formattedDate = (() => {
+    if (!createdDate) {
+      return 'Unknown date';
+    }
 
-export default function ReportCard({
-  patientName,
-  reportDate,
-  birads,
-  status,
-  onSelect,
-}: ReportCardProps) {
+    try {
+      return format(new Date(createdDate), 'MMM d, yyyy');
+    } catch {
+      return 'Invalid date';
+    }
+  })();
+  const biradsValue = report.birads?.value;
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={[
-        'w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm',
-        'p-5 transition hover:shadow-md hover:border-pink-200 focus:outline-none',
-        'focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2',
-      ].join(' ')}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-xl shadow-md p-6 cursor-pointer hover:shadow-lg transition"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') {
+          onClick?.();
+        } else if (event.key === ' ') {
+          event.preventDefault();
+          onClick?.();
+        }
+      }}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-gray-500">Patient</p>
-          <h4 className="text-lg font-semibold text-gray-900">{patientName}</h4>
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <FileText className="text-pink-600" size={24} />
+          <div>
+            <h3 className="font-semibold text-gray-900">
+              {report.filename ?? 'Untitled report'}
+            </h3>
+            <p className="text-sm text-gray-500">{formattedDate}</p>
+          </div>
         </div>
+
+        {biradsValue != null && (
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${getBiradsColorClass(
+              biradsValue
+            )}`}
+          >
+            BI-RADS {biradsValue}
+          </span>
+        )}
+      </div>
+
+      {report.red_flags && report.red_flags.length > 0 && (
+        <div className="mt-3 flex items-center gap-2 text-red-600">
+          <AlertTriangle size={16} />
+          <span className="text-sm font-medium">
+            {report.red_flags.length} red flags
+          </span>
+        </div>
+      )}
+
+      <div className="mt-3">
         <span
-          className={[
-            'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide',
-            biradsStyles[birads],
-          ].join(' ')}
+          className={`text-sm px-2 py-1 rounded-md ${getStatusClasses(
+            report.status
+          )}`}
         >
-          BI-RADS {birads}
+          {report.status ?? 'unknown'}
         </span>
       </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-gray-500">
-        <div>
-          <span className="font-medium text-gray-700">Report Date:</span>{' '}
-          {reportDate}
-        </div>
-        <div className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-          {status}
-        </div>
-      </div>
-    </button>
+    </motion.div>
   );
 }
