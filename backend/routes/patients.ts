@@ -5,6 +5,16 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const getQueryString = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return undefined;
+};
+
 // All routes are protected
 router.use(authMiddleware);
 

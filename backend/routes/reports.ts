@@ -72,11 +72,14 @@ router.post('/', async (req: AuthRequest, res) => {
     // Check for duplicate filename for this patient
     const existingReport = await RadiologyReport.findOne({
       patient_id,
-      filename
+      filename,
+      created_by: req.user.email
     });
 
     if (existingReport) {
-      return res.status(400).json({ error: 'A report with this filename already exists for this patient' });
+      return res.status(409).json({
+        error: `A report named "${filename}" already exists for this patient.`
+      });
     }
 
     const report = new RadiologyReport({
