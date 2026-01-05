@@ -1,15 +1,40 @@
-import { useProcessReport } from '../hooks/useProcessReport';
+import { useState } from 'react';
+import type { React } from 'react';
+import { apiClient } from '../lib/api';
+
+type ProcessingStatus = 'idle' | 'processing' | 'completed' | 'error';
 
 export default function Home() {
-  const {
-    reportId,
-    setReportId,
-    processingStatus,
-    errorMessage,
-    lastProcessedId,
-    isProcessing,
-    handleProcessReport,
-  } = useProcessReport();
+  const [reportId, setReportId] = useState('');
+  const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [lastProcessedId, setLastProcessedId] = useState('');
+
+  const isProcessing = processingStatus === 'processing';
+
+  const handleProcessReport = async (event?: React.FormEvent<HTMLFormElement>) => {
+    if (event) {
+      event.preventDefault();
+    }
+
+    if (!reportId.trim()) {
+      return;
+    }
+
+    setProcessingStatus('processing');
+    setErrorMessage('');
+    setLastProcessedId('');
+
+    try {
+      await apiClient.processReport(reportId.trim());
+      setLastProcessedId(reportId.trim());
+      setProcessingStatus('completed');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Processing failed';
+      setErrorMessage(message);
+      setProcessingStatus('error');
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -160,7 +185,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <form onSubmit={handleProcessReport} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="flex-1 text-sm font-medium text-gray-700">
             Report ID
             <input
@@ -174,14 +199,13 @@ export default function Home() {
           </label>
 
           <button
-            type="button"
-            onClick={handleProcessReport}
+            type="submit"
             disabled={isProcessing || reportId.trim().length === 0}
             className="inline-flex items-center justify-center rounded-xl bg-pink-600 px-4 py-2 text-white shadow-sm transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:bg-pink-300"
           >
             {isProcessing ? 'Processing...' : 'Run AI Processing'}
           </button>
-        </div>
+        </form>
 
         {isProcessing && (
           <div className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-700">
