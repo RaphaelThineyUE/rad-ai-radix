@@ -191,7 +191,10 @@ export default function PatientAnalytics() {
 
         <div className="mt-6 h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={biomarkerDistribution} margin={{ left: 8, right: 16 }}>
+            <BarChart
+              data={biomarkerDistribution}
+              margin={{ top: 16, right: 16, bottom: 24, left: 8 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="biomarker"
