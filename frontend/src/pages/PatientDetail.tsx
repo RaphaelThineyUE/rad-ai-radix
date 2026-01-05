@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom';
+import TreatmentComparison from '../components/treatments/TreatmentComparison';
 
 export default function PatientDetail() {
   const { id } = useParams();
@@ -11,6 +12,7 @@ export default function PatientDetail() {
         </h2>
         <p className="text-gray-600">Patient ID: {id}</p>
       </div>
+      <TreatmentComparison patientId={id} />
     </div>
   );
 }
