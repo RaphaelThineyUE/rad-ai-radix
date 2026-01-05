@@ -1,41 +1,17 @@
-import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiClient } from '../lib/api';
-
-type ProcessingStatus = 'idle' | 'processing' | 'completed' | 'error';
+import { useProcessReport } from '../hooks/useProcessReport';
 
 export default function PatientDetail() {
   const { id } = useParams();
-  const [reportId, setReportId] = useState('');
-  const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [lastProcessedId, setLastProcessedId] = useState('');
-
-  const isProcessing = processingStatus === 'processing';
-
-  const handleProcessReport = async (event?: FormEvent) => {
-    if (event) {
-      event.preventDefault();
-    }
-    
-    if (!reportId.trim()) {
-      return;
-    }
-
-    setProcessingStatus('processing');
-    setErrorMessage('');
-    setLastProcessedId('');
-
-    try {
-      await apiClient.processReport(reportId.trim());
-      setLastProcessedId(reportId.trim());
-      setProcessingStatus('completed');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Processing failed';
-      setErrorMessage(message);
-      setProcessingStatus('error');
-    }
-  };
+  const {
+    reportId,
+    setReportId,
+    processingStatus,
+    errorMessage,
+    lastProcessedId,
+    isProcessing,
+    handleProcessReport,
+  } = useProcessReport();
 
   return (
     <div className="space-y-6">
