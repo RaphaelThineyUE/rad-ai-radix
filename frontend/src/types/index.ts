@@ -33,11 +33,26 @@ export interface Patient {
 export interface RadiologyReport {
   _id: string;
   patient_id: string;
-  report_date?: string;
-  report_type?: string;
-  findings?: string;
-  impressions?: string;
-  recommendations?: string;
+  filename?: string;
+  file_url?: string;
+  file_size?: number;
+  status?: 'pending' | 'processing' | 'completed' | 'failed';
+  summary?: string;
+  report_date: string;
+  report_type: string;
+  findings: string | Array<{
+    laterality?: string;
+    location?: string;
+    description?: string;
+    assessment?: string;
+    evidence?: string[];
+  }>;
+  impressions: string;
+  recommendations?: string | Array<{
+    action?: string;
+    timeframe?: string;
+    evidence?: string[];
+  }>;
   file_path?: string;
   file_url?: string;
   filename?: string;
@@ -50,10 +65,29 @@ export interface RadiologyReport {
   exam?: string;
   comparison?: string;
   ai_analysis?: Record<string, any>;
-  status?: string;
-  created_by?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  birads?: {
+    value?: number;
+    confidence?: 'low' | 'medium' | 'high';
+    evidence?: string[];
+  };
+  breast_density?: {
+    value?: string;
+    evidence?: string[];
+  };
+  exam?: {
+    type?: string;
+    laterality?: string;
+    evidence?: string[];
+  };
+  comparison?: {
+    prior_exam_date?: string;
+    evidence?: string[];
+  };
+  red_flags?: string[];
+  processing_time_ms?: number;
+  raw_text?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TreatmentRecord {
