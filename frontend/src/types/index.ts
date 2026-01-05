@@ -12,6 +12,7 @@ export interface Patient {
   mrn: string;
   full_name: string;
   date_of_birth: string;
+  cancer_stage?: string;
   contact_info?: {
     phone?: string;
     email?: string;
