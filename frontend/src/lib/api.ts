@@ -86,24 +86,24 @@ class ApiClient {
   }
 
   // Patient endpoints
-  async getPatients(filters: Record<string, string> = {}): Promise<{ patients: Patient[] }> {
+  async getPatients(filters: Record<string, string> = {}): Promise<Patient[]> {
     const params = new URLSearchParams(filters);
-    return this.request<{ patients: Patient[] }>(`/patients?${params}`);
+    return this.request<Patient[]>(`/patients?${params}`);
   }
 
-  async createPatient(data: Partial<Patient>): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>('/patients', {
+  async createPatient(data: Partial<Patient>): Promise<Patient> {
+    return this.request<Patient>('/patients', {
       method: 'POST',
       body: JSON.stringify(data)
     });
   }
 
-  async getPatient(id: string): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>(`/patients/${id}`);
+  async getPatient(id: string): Promise<Patient> {
+    return this.request<Patient>(`/patients/${id}`);
   }
 
-  async updatePatient(id: string, data: Partial<Patient>): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>(`/patients/${id}`, {
+  async updatePatient(id: string, data: Partial<Patient>): Promise<Patient> {
+    return this.request<Patient>(`/patients/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     });
@@ -165,8 +165,8 @@ class ApiClient {
     return this.request<RadiologyReport[]>(`/reports?${params}`);
   }
 
-  async getReport(id: string): Promise<{ report: RadiologyReport }> {
-    return this.request<{ report: RadiologyReport }>(`/reports/${id}`);
+  async getReport(id: string): Promise<RadiologyReport> {
+    return this.request<RadiologyReport>(`/reports/${id}`);
   }
 
   async updateReport(id: string, data: Partial<RadiologyReport>): Promise<{ report: RadiologyReport }> {
