@@ -1,223 +1,159 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
 
 import { apiClient } from '../lib/api';
-import type { Patient, RadiologyReport, TreatmentRecord } from '../types';
+import type { TreatmentRecord } from '../types';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const WINDOW_DAYS = 30;
+const STATUS_COLORS = ['#2563eb', '#10b981', '#f97316', '#a855f7', '#6b7280'];
 
-type Trend = {
-  direction: 'up' | 'down' | 'flat';
-  value?: number;
-  label: string;
-};
+const formatStatusLabel = (status: string) =>
+  status
+    .split(/[_-]/g)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(' ');
 
-const formatNumber = (value: number) => new Intl.NumberFormat().format(value);
-
-const getDateValue = (value?: string) => {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
-};
-
-const getTrend = (current: number, previous: number): Trend => {
-  if (previous === 0 && current === 0) {
-    return { direction: 'flat', value: 0, label: 'No change vs prior 30d' };
-  }
-
-  if (previous === 0) {
-    return { direction: 'up', label: 'New activity in last 30d' };
-  }
-
-  const delta = ((current - previous) / previous) * 100;
-  if (delta === 0) {
-    return { direction: 'flat', value: 0, label: 'No change vs prior 30d' };
-  }
-
-  return {
-    direction: delta > 0 ? 'up' : 'down',
-    value: Math.abs(delta),
-    label: 'vs prior 30d'
-  };
-};
-
-const TrendIndicator = ({ trend }: { trend: Trend }) => {
-  const directionStyles = {
-    up: 'text-emerald-600 bg-emerald-50',
-    down: 'text-rose-600 bg-rose-50',
-    flat: 'text-gray-500 bg-gray-100'
-  } as const;
-
-  const directionSymbol = {
-    up: '▲',
-    down: '▼',
-    flat: '▬'
-  } as const;
-
-  return (
-    <div className="flex items-center gap-2 text-xs text-gray-500">
-      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold ${directionStyles[trend.direction]}`}>
-        <span>{directionSymbol[trend.direction]}</span>
-        <span>
-          {trend.value === undefined ? 'New' : `${trend.value.toFixed(0)}%`}
-        </span>
-      </span>
-      <span>{trend.label}</span>
-    </div>
-  );
+const isCompletedStatus = (status: string) => {
+  const normalized = status.trim().toLowerCase();
+  return normalized === 'completed' || normalized === 'complete' || normalized === 'closed';
 };
 
 export default function PatientAnalytics() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [reports, setReports] = useState<RadiologyReport[]>([]);
   const [treatments, setTreatments] = useState<TreatmentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-
+    const loadTreatments = async () => {
       try {
-        const [patientsResponse, reportsResponse, treatmentsResponse] = await Promise.all([
-          apiClient.getPatients(),
-          apiClient.getReports(),
-          apiClient.getTreatments()
-        ]);
-
-        const normalizeList = <T,>(
-          data: { [key: string]: T[] } | T[] | undefined
-        ): T[] => {
-          if (!data) return [];
-          if (Array.isArray(data)) return data;
-          return Object.values(data)[0] ?? [];
-        };
-
-        if (!isMounted) return;
-
-        setPatients(normalizeList(patientsResponse as { patients?: Patient[] } | Patient[]));
-        setReports(normalizeList(reportsResponse as { reports?: RadiologyReport[] } | RadiologyReport[]));
-        setTreatments(normalizeList(treatmentsResponse as { treatments?: TreatmentRecord[] } | TreatmentRecord[]));
-      } catch (err) {
-        if (!isMounted) return;
-        setError(err instanceof Error ? err.message : 'Unable to load analytics data.');
+        setIsLoading(true);
+        const response = await apiClient.getTreatments();
+        if (isMounted) {
+          setTreatments(response.treatments || []);
+          setErrorMessage(null);
+        }
+      } catch (error) {
+        console.error('Failed to load treatments', error);
+        if (isMounted) {
+          setErrorMessage('Unable to load treatment outcomes right now.');
+        }
       } finally {
         if (isMounted) {
-          setLoading(false);
+          setIsLoading(false);
         }
       }
     };
 
-    loadData();
+    loadTreatments();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const metrics = useMemo(() => {
-    const now = Date.now();
-    const recentStart = now - WINDOW_DAYS * DAY_MS;
-    const previousStart = now - WINDOW_DAYS * 2 * DAY_MS;
+  const statusStats = useMemo(() => {
+    const counts = treatments.reduce<Record<string, number>>((acc, treatment) => {
+      const statusLabel = treatment.status?.trim() ? treatment.status.trim() : 'Unknown';
+      acc[statusLabel] = (acc[statusLabel] || 0) + 1;
+      return acc;
+    }, {});
 
-    const countInWindow = <T,>(items: T[], getDate: (item: T) => number | null, start: number, end: number) =>
-      items.filter((item) => {
-        const timestamp = getDate(item);
-        return timestamp !== null && timestamp >= start && timestamp < end;
-      }).length;
+    return Object.entries(counts).map(([name, value]) => ({
+      name: formatStatusLabel(name),
+      value
+    }));
+  }, [treatments]);
 
-    const patientDate = (patient: Patient) =>
-      getDateValue(patient.created_date ?? patient.createdAt);
-    const reportDate = (report: RadiologyReport) =>
-      getDateValue(report.report_date ?? report.created_date ?? report.createdAt);
-    const treatmentDate = (treatment: TreatmentRecord) =>
-      getDateValue(treatment.start_date ?? treatment.created_date ?? treatment.createdAt);
-
-    const totalPatients = patients.length;
-    const totalReports = reports.length;
-
-    const activeTreatments = treatments.filter((treatment) => {
-      const status = treatment.status?.toLowerCase();
-      if (status && ['completed', 'inactive', 'ended'].includes(status)) {
-        return false;
+  const treatmentTypeStats = useMemo(() => {
+    const counts = treatments.reduce<
+      Record<string, { name: string; total: number; completed: number }>
+    >((acc, treatment) => {
+      const typeLabel = treatment.treatment_type?.trim() || 'Unspecified';
+      if (!acc[typeLabel]) {
+        acc[typeLabel] = { name: typeLabel, total: 0, completed: 0 };
       }
-      const endDate = getDateValue(treatment.end_date);
-      if (endDate && endDate <= now) {
-        return false;
+      acc[typeLabel].total += 1;
+      if (treatment.status && isCompletedStatus(treatment.status)) {
+        acc[typeLabel].completed += 1;
       }
-      return status ? ['active', 'ongoing', 'in-progress'].includes(status) : !treatment.end_date;
-    });
+      return acc;
+    }, {});
 
-    const multiReportCount = Object.values(
-      reports.reduce<Record<string, number>>((acc, report) => {
-        acc[report.patient_id] = (acc[report.patient_id] || 0) + 1;
-        return acc;
-      }, {})
-    ).filter((count) => count > 1).length;
+    return Object.values(counts);
+  }, [treatments]);
 
-    const recentPatientCount = countInWindow(patients, patientDate, recentStart, now);
-    const previousPatientCount = countInWindow(patients, patientDate, previousStart, recentStart);
-    const recentReportCount = countInWindow(reports, reportDate, recentStart, now);
-    const previousReportCount = countInWindow(reports, reportDate, previousStart, recentStart);
-    const recentActiveTreatmentCount = countInWindow(activeTreatments, treatmentDate, recentStart, now);
-    const previousActiveTreatmentCount = countInWindow(activeTreatments, treatmentDate, previousStart, recentStart);
+  const statTotals = useMemo(() => {
+    const activeCount = treatments.filter((treatment) => {
+      const normalized = treatment.status?.toLowerCase() ?? '';
+      return normalized.includes('active') || normalized.includes('progress');
+    }).length;
 
-    const avgReportsPerPatient = totalPatients > 0 ? totalReports / totalPatients : 0;
-    const recentAvgReports = totalPatients > 0 ? recentReportCount / totalPatients : 0;
-    const previousAvgReports = totalPatients > 0 ? previousReportCount / totalPatients : 0;
+    const completedCount = treatments.filter((treatment) =>
+      treatment.status ? isCompletedStatus(treatment.status) : false
+    ).length;
 
-    return [
-      {
-        title: 'Total Patients',
-        value: formatNumber(totalPatients),
-        accent: 'text-blue-600',
-        helper: `${formatNumber(multiReportCount)} patients with multiple reports`,
-        trend: getTrend(recentPatientCount, previousPatientCount)
-      },
-      {
-        title: 'Total Reports',
-        value: formatNumber(totalReports),
-        accent: 'text-purple-600',
-        helper: `${formatNumber(recentReportCount)} reports added in last 30d`,
-        trend: getTrend(recentReportCount, previousReportCount)
-      },
-      {
-        title: 'Avg Reports / Patient',
-        value: avgReportsPerPatient.toFixed(1),
-        accent: 'text-emerald-600',
-        helper: `Across ${formatNumber(totalPatients)} patients`,
-        trend: getTrend(recentAvgReports, previousAvgReports)
-      },
-      {
-        title: 'Active Treatments',
-        value: formatNumber(activeTreatments.length),
-        accent: 'text-orange-600',
-        helper: `${formatNumber(activeTreatments.length)} ongoing plans`,
-        trend: getTrend(recentActiveTreatmentCount, previousActiveTreatmentCount)
-      }
-    ];
-  }, [patients, reports, treatments]);
+    const pendingCount = treatments.filter((treatment) => {
+      const normalized = treatment.status?.toLowerCase() ?? '';
+      return normalized.includes('pending') || normalized.includes('scheduled');
+    }).length;
+
+    return {
+      total: treatments.length,
+      active: activeCount,
+      completed: completedCount,
+      pending: pendingCount
+    };
+  }, [treatments]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-start justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
           <p className="text-sm text-gray-500">
-            Consolidated insights across all patient reports.
+            Track treatment outcomes and completion trends.
           </p>
         </div>
-        {loading ? (
-          <span className="text-sm text-gray-500">Refreshing metrics...</span>
-        ) : null}
+        {isLoading && <span className="text-sm text-gray-400">Loading...</span>}
       </div>
 
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-          {error}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="text-3xl font-bold text-blue-600 mb-2">
+            {statTotals.total}
+          </div>
+          <div className="text-gray-600">Total Treatments</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="text-3xl font-bold text-green-600 mb-2">
+            {statTotals.active}
+          </div>
+          <div className="text-gray-600">Active Treatments</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="text-3xl font-bold text-purple-600 mb-2">
+            {statTotals.completed}
+          </div>
+          <div className="text-gray-600">Completed Treatments</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="text-3xl font-bold text-orange-600 mb-2">
+            {statTotals.pending}
+          </div>
+          <div className="text-gray-600">Pending Outcomes</div>
         </div>
       ) : null}
 
@@ -232,12 +168,105 @@ export default function PatientAnalytics() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">
-          Demographics Overview
-        </h3>
-        <div className="text-center py-12 text-gray-500">
-          {loading ? 'Loading patient trends...' : 'No data available yet. Add patients to see analytics.'}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Outcomes by Status
+              </h3>
+              <p className="text-sm text-gray-500">
+                Distribution of treatment outcomes across all patients.
+              </p>
+            </div>
+          </div>
+
+          {errorMessage ? (
+            <div className="text-center py-12 text-red-500">{errorMessage}</div>
+          ) : statusStats.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              No treatment outcomes yet. Add treatments to populate this chart.
+            </div>
+          ) : (
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusStats}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    outerRadius={110}
+                    paddingAngle={3}
+                  >
+                    {statusStats.map((entry, index) => (
+                      <Cell
+                        key={`status-cell-${entry.name}`}
+                        fill={STATUS_COLORS[index % STATUS_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, name: string) => [
+                      `${value} treatments`,
+                      name
+                    ]}
+                  />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Completion by Treatment Type
+              </h3>
+              <p className="text-sm text-gray-500">
+                Compare completed vs total treatments by type.
+              </p>
+            </div>
+          </div>
+
+          {errorMessage ? (
+            <div className="text-center py-12 text-red-500">{errorMessage}</div>
+          ) : treatmentTypeStats.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              No treatment types available yet. Add treatments to see progress.
+            </div>
+          ) : (
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={treatmentTypeStats} barGap={8}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip
+                    formatter={(value: number, name: string) => [
+                      `${value} treatments`,
+                      name
+                    ]}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="total"
+                    name="Total"
+                    fill="#2563eb"
+                    radius={[6, 6, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="completed"
+                    name="Completed"
+                    fill="#10b981"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
     </div>
