@@ -17,8 +17,10 @@ export interface Patient {
     email?: string;
     address?: string;
   };
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  created_date?: string;
+  updated_date?: string;
 }
 
 export interface RadiologyReport {
@@ -32,8 +34,12 @@ export interface RadiologyReport {
   file_path?: string;
   extracted_text?: string;
   ai_analysis?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
+  status?: 'pending' | 'processing' | 'completed' | 'failed';
+  processing_time_ms?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  created_date?: string;
+  updated_date?: string;
 }
 
 export interface TreatmentRecord {
@@ -49,8 +55,10 @@ export interface TreatmentRecord {
     dosage: string;
     frequency: string;
   }>;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  created_date?: string;
+  updated_date?: string;
 }
 
 export interface AuthResponse {
