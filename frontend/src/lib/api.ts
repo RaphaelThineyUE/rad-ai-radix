@@ -116,25 +116,47 @@ class ApiClient {
   }
 
   // Report endpoints
-  async uploadFile(file: File): Promise<{ file_path: string; extracted_text?: string }> {
+  async uploadFile(
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<{ file_path: string; extracted_text?: string }> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${this.baseURL}/reports/upload`, {
-      method: 'POST',
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` })
-      },
-      body: formData
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${this.baseURL}/reports/upload`);
+      xhr.responseType = 'json';
+
+      const token = localStorage.getItem('token');
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (!onProgress || !event.lengthComputable) {
+          return;
+        }
+        const progress = Math.round((event.loaded / event.total) * 100);
+        onProgress(progress);
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response);
+          return;
+        }
+        const errorMessage =
+          (xhr.response as { error?: string } | null)?.error || 'Upload failed';
+        reject(new Error(errorMessage));
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Upload failed'));
+      });
+
+      xhr.send(formData);
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Upload failed');
-    }
-
-    return response.json();
   }
 
   async createReport(data: Partial<RadiologyReport>): Promise<{ report: RadiologyReport }> {
