@@ -66,6 +66,9 @@ describe('Patient Routes', () => {
         full_name: 'Second Patient'
       });
 
+    expect(secondPatientRes.status).toBe(201);
+    expect(secondPatientRes.body).toHaveProperty('_id');
+    expect(secondPatientRes.body).toHaveProperty('full_name', 'Second Patient');
     secondPatientId = secondPatientRes.body._id;
 
     const res = await request(app)
