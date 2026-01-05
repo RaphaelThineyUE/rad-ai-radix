@@ -33,9 +33,25 @@ export interface Patient {
 export interface RadiologyReport {
   _id: string;
   patient_id: string;
-  filename: string;
-  file_url?: string;
-  file_size?: number;
+  report_date: string;
+  report_type: string;
+  findings: string | Array<{
+    laterality?: string;
+    location?: string;
+    description?: string;
+    assessment?: string;
+    evidence?: string[];
+  }>;
+  impressions: string;
+  recommendations?: string | Array<{
+    action?: string;
+    timeframe?: string;
+    evidence?: string[];
+  }>;
+  file_path?: string;
+  extracted_text?: string;
+  ai_analysis?: Record<string, any>;
+  filename?: string;
   status?: 'pending' | 'processing' | 'completed' | 'failed';
   summary?: string;
   birads?: {
@@ -56,23 +72,10 @@ export interface RadiologyReport {
     prior_exam_date?: string;
     evidence?: string[];
   };
-  findings?: Array<{
-    laterality?: string;
-    location?: string;
-    description?: string;
-    assessment?: string;
-    evidence?: string[];
-  }>;
-  recommendations?: Array<{
-    action?: string;
-    timeframe?: string;
-    evidence?: string[];
-  }>;
   red_flags?: string[];
-  processing_time_ms?: number;
   raw_text?: string;
-  created_date: string;
-  updated_date: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TreatmentRecord {
