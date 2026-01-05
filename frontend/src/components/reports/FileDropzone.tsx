@@ -1,185 +1,150 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
+import { Upload, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiClient } from '../../lib/api';
-import type { Patient } from '../../types';
 
 interface FileDropzoneProps {
-  onFileSelected: (file: File, patientId: string) => void;
+  patientId?: string;
+  onUploadSuccess?: () => void;
 }
 
-const ACCEPTED_MIME_TYPE = 'application/pdf';
-
-export default function FileDropzone({ onFileSelected }: FileDropzoneProps) {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [selectedPatientId, setSelectedPatientId] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const [patientError, setPatientError] = useState<string | null>(null);
+export default function FileDropzone({ patientId, onUploadSuccess }: FileDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadPatients = async () => {
-      try {
-        setIsLoading(true);
-        const { patients: patientResults } = await apiClient.getPatients();
-        if (isMounted) {
-          setPatients(patientResults);
-          setFetchError(null);
-        }
-      } catch {
-        if (isMounted) {
-          setFetchError('Unable to load patients. Please try again.');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+  const handleFile = useCallback(
+    async (file: File) => {
+      if (!patientId) {
+        toast.error('Please select a patient first');
+        return;
       }
-    };
 
-    loadPatients();
+      if (file.type !== 'application/pdf') {
+        toast.error('Only PDF files are allowed');
+        return;
+      }
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File size must be less than 10MB');
+        return;
+      }
 
-  const emitSelection = (file: File, patientId: string) => {
-    if (!patientId) {
-      setPatientError('Select a patient before uploading a report.');
-      return;
-    }
+      setIsUploading(true);
 
-    setPatientError(null);
-    onFileSelected(file, patientId);
+      try {
+        const uploadData = await apiClient.uploadFile(file);
+        const report = await apiClient.createReport({
+          patient_id: patientId,
+          filename: uploadData.filename || file.name,
+          file_url: uploadData.file_url,
+          file_size: uploadData.file_size
+        });
+
+        setIsUploading(false);
+        setIsProcessing(true);
+
+        await apiClient.processReport(report._id);
+
+        toast.success('Report uploaded and processed successfully!');
+        onUploadSuccess?.();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Upload failed');
+      } finally {
+        setIsUploading(false);
+        setIsProcessing(false);
+      }
+    },
+    [onUploadSuccess, patientId]
+  );
+
+  const onDrop = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDragging(false);
+
+      if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+        void handleFile(event.dataTransfer.files[0]);
+      }
+    },
+    [handleFile]
+  );
+
+  const onBrowseClick = () => {
+    if (isUploading || isProcessing) return;
+    fileInputRef.current?.click();
   };
 
-  const isPdfFile = (file: File) =>
-    file.type === ACCEPTED_MIME_TYPE || file.name.toLowerCase().endsWith('.pdf');
-
-  const handleFile = (file: File) => {
-    if (!isPdfFile(file)) {
-      setSelectedFile(null);
-      setFileError('Only PDF files are supported.');
-      return;
-    }
-
-    setFileError(null);
-    setSelectedFile(file);
-    emitSelection(file, selectedPatientId);
-  };
-
-  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-    setIsDragging(false);
-
-    const [file] = Array.from(event.dataTransfer.files);
+  const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) {
-      handleFile(file);
+      void handleFile(file);
     }
-  };
-
-  const handleDragOver = (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const [file] = Array.from(event.target.files ?? []);
-    if (file) {
-      handleFile(file);
-    }
-  };
-
-  const handlePatientChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const patientId = event.target.value;
-    setSelectedPatientId(patientId);
-
-    if (!patientId) {
-      setPatientError('Select a patient before uploading a report.');
-      return;
-    }
-
-    setPatientError(null);
-    if (selectedFile) {
-      emitSelection(selectedFile, patientId);
-    }
+    event.target.value = '';
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Patient
-        </label>
-        <select
-          className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-gray-700 focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-200"
-          onChange={handlePatientChange}
-          value={selectedPatientId}
-          disabled={isLoading || !!fetchError}
-        >
-          <option value="">Select a patient</option>
-          {patients.map((patient) => (
-            <option key={patient._id} value={patient._id}>
-              {patient.full_name} ({patient.mrn})
-            </option>
-          ))}
-        </select>
-        {isLoading && (
-          <p className="mt-2 text-sm text-gray-500">Loading patients...</p>
-        )}
-        {fetchError && (
-          <p className="mt-2 text-sm text-red-600">{fetchError}</p>
-        )}
-        {patientError && (
-          <p className="mt-2 text-sm text-red-600">{patientError}</p>
-        )}
-      </div>
+    <div className="space-y-3">
+      <div
+        className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${
+          isDragging ? 'border-pink-500 bg-pink-50' : 'border-gray-200 bg-white'
+        } ${isUploading || isProcessing ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+        onDragOver={(event) => {
+          event.preventDefault();
+          if (!isUploading && !isProcessing) {
+            setIsDragging(true);
+          }
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={onDrop}
+        onClick={onBrowseClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            onBrowseClick();
+          }
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={onFileChange}
+          disabled={isUploading || isProcessing}
+        />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Report PDF
-        </label>
-        <label
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 text-center transition ${
-            isDragging
-              ? 'border-pink-400 bg-pink-50'
-              : 'border-gray-200 bg-white hover:border-pink-300'
-          }`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-        >
-          <input
-            className="hidden"
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileChange}
-          />
-          <p className="text-sm font-medium text-gray-700">
-            Drag and drop a PDF here, or click to browse
-          </p>
-          <p className="mt-2 text-xs text-gray-500">
-            Only PDF files are supported.
-          </p>
-        </label>
-        {selectedFile && (
-          <p className="mt-2 text-sm text-gray-600">
-            Selected: <span className="font-medium">{selectedFile.name}</span>
-          </p>
-        )}
-        {fileError && (
-          <p className="mt-2 text-sm text-red-600">{fileError}</p>
+        {isUploading || isProcessing ? (
+          <div className="flex flex-col items-center gap-3 text-gray-600">
+            <Loader2 className="animate-spin" size={32} />
+            <div className="font-medium">
+              {isUploading ? 'Uploading report...' : 'Processing with AI...'}
+            </div>
+            <p className="text-sm text-gray-500">
+              {isUploading
+                ? 'Securely transferring your PDF.'
+                : 'Analyzing report findings and recommendations.'}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 text-gray-600">
+            <div className="flex items-center gap-2 text-pink-600">
+              <Upload size={20} />
+              <FileText size={20} />
+            </div>
+            <div className="text-lg font-semibold text-gray-900">Drop PDF report here</div>
+            <p className="text-sm text-gray-500">Or click to browse files (max 10MB)</p>
+          </div>
         )}
       </div>
+      {!patientId && (
+        <p className="text-sm text-amber-600">
+          Select a patient to enable uploads.
+        </p>
+      )}
     </div>
   );
 }
