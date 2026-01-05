@@ -231,6 +231,20 @@ class ApiClient {
       body: JSON.stringify({ patient_id, treatment_options })
     });
   }
+
+  // Biomarker endpoints
+  async getBiomarkerRanges(age?: number, sex?: string): Promise<{ ranges: Array<any> }> {
+    const params = new URLSearchParams();
+    if (age !== undefined) params.append('age', age.toString());
+    if (sex) params.append('sex', sex);
+    return this.request<{ ranges: Array<any> }>(`/biomarkers/ranges?${params}`);
+  }
+
+  async initializeBiomarkerRanges(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/biomarkers/ranges/init', {
+      method: 'POST'
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
