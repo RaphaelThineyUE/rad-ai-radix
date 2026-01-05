@@ -11,6 +11,7 @@ import patientRoutes from './routes/patients.js';
 import reportRoutes from './routes/reports.js';
 import treatmentRoutes from './routes/treatments.js';
 import aiRoutes from './routes/ai.js';
+import biomarkerRoutes from './routes/biomarkers.js';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/treatments', treatmentRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/biomarkers', biomarkerRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

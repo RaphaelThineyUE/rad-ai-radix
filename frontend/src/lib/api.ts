@@ -3,7 +3,8 @@ import type {
   Patient, 
   RadiologyReport, 
   TreatmentRecord, 
-  AuthResponse 
+  AuthResponse,
+  BiomarkerRange
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -267,6 +268,20 @@ class ApiClient {
     return this.request<{ comparison: Record<string, any> }>('/ai/compare-treatments', {
       method: 'POST',
       body: JSON.stringify({ patient_id, treatment_options })
+    });
+  }
+
+  // Biomarker endpoints
+  async getBiomarkerRanges(age?: number, sex?: string): Promise<{ ranges: BiomarkerRange[] }> {
+    const params = new URLSearchParams();
+    if (age !== undefined) params.append('age', age.toString());
+    if (sex) params.append('sex', sex);
+    return this.request<{ ranges: BiomarkerRange[] }>(`/biomarkers/ranges?${params}`);
+  }
+
+  async initializeBiomarkerRanges(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/biomarkers/ranges/init', {
+      method: 'POST'
     });
   }
 }

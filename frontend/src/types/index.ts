@@ -95,6 +95,23 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface BiomarkerRange {
+  _id?: string;
+  biomarker_type: 'glucose' | 'ldl' | 'hemoglobin' | 'vitaminD';
+  label: string;
+  unit: string;
+  low: number;
+  high: number;
+  demographics?: {
+    age_min?: number;
+    age_max?: number;
+    sex?: 'Male' | 'Female' | 'Other';
+  };
+  source?: string;
+  created_date?: string;
+  updated_date?: string;
+}
+
 export interface ApiError {
   error: string;
 }
