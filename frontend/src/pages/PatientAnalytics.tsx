@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { useEffect, useState } from 'react';
 import { apiClient } from '../lib/api';
+import type { BiomarkerRange } from '../types';
 
 type BiomarkerKey = 'glucose' | 'ldl' | 'hemoglobin' | 'vitaminD';
 
@@ -19,14 +20,6 @@ type Patient = {
   id: string;
   treatmentStatus: 'active' | 'completed' | 'pending';
   biomarkers: PatientBiomarkers;
-};
-
-type BiomarkerRange = {
-  biomarker_type: BiomarkerKey;
-  label: string;
-  unit: string;
-  low: number;
-  high: number;
 };
 
 
@@ -94,7 +87,7 @@ const categorizeValue = (value: number, range: BiomarkerRange) => {
 };
 
 export default function PatientAnalytics() {
-  const [biomarkerRanges, setBiomarkerRanges] = useState<Record<BiomarkerKey, BiomarkerRange>>({} as Record<BiomarkerKey, BiomarkerRange>);
+  const [biomarkerRanges, setBiomarkerRanges] = useState<Record<BiomarkerKey, BiomarkerRange> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -154,6 +147,28 @@ export default function PatientAnalytics() {
     fetchBiomarkerRanges();
   }, []);
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-gray-500">Loading biomarker data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!biomarkerRanges) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-red-500">Failed to load biomarker data.</div>
+        </div>
+      </div>
+    );
+  }
+
   const biomarkerKeys = Object.keys(biomarkerRanges) as BiomarkerKey[];
 
   const biomarkerDistribution = biomarkerKeys.map((key) => {
@@ -184,17 +199,6 @@ export default function PatientAnalytics() {
   const pendingReviews = patients.filter(
     (patient) => patient.treatmentStatus === 'pending',
   ).length;
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-gray-500">Loading biomarker data...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

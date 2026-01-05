@@ -146,7 +146,10 @@ Frontend will run on http://localhost:5173
 ### Analytics
 - Patient demographics
 - Treatment outcomes
-- Biomarker distributions
+- Biomarker distributions with configurable reference ranges
+  - Reference ranges can be customized by demographics (age, sex)
+  - Fetched from backend API for flexibility
+  - Supports multiple laboratories and clinical guidelines
 
 ## API Endpoints
 
@@ -184,6 +187,13 @@ Frontend will run on http://localhost:5173
 - `POST /api/ai/generate-summary` - Generate patient summary
 - `POST /api/ai/consolidate-reports` - Consolidate multiple reports
 - `POST /api/ai/compare-treatments` - Compare treatment options
+
+### Biomarkers (Protected)
+- `GET /api/biomarkers/ranges` - Get biomarker reference ranges (with optional age and sex filters)
+- `POST /api/biomarkers/ranges` - Create a new biomarker range (admin)
+- `PATCH /api/biomarkers/ranges/:id` - Update a biomarker range (admin)
+- `DELETE /api/biomarkers/ranges/:id` - Delete a biomarker range (admin)
+- `POST /api/biomarkers/ranges/init` - Initialize default biomarker ranges
 
 ## Testing
 

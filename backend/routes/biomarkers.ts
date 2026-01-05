@@ -14,6 +14,12 @@ router.get('/ranges', authMiddleware, async (req, res) => {
     // Filter by demographics if provided
     if (age) {
       const ageNum = parseInt(age as string);
+      
+      // Validate age is a valid number
+      if (isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
+        return res.status(400).json({ error: 'Invalid age parameter. Must be a number between 0 and 150.' });
+      }
+      
       query.$or = [
         { 'demographics.age_min': { $exists: false }, 'demographics.age_max': { $exists: false } },
         { 
@@ -26,6 +32,11 @@ router.get('/ranges', authMiddleware, async (req, res) => {
     }
     
     if (sex) {
+      // Validate sex parameter
+      if (!['Male', 'Female', 'Other'].includes(sex as string)) {
+        return res.status(400).json({ error: 'Invalid sex parameter. Must be Male, Female, or Other.' });
+      }
+      
       query.$or = query.$or || [];
       if (query.$or.length > 0) {
         query.$and = [
@@ -43,6 +54,10 @@ router.get('/ranges', authMiddleware, async (req, res) => {
     
     const ranges = await BiomarkerRange.find(query);
     
+    // Constants for specificity scoring
+    const AGE_SPECIFICITY_WEIGHT = 2;
+    const SEX_SPECIFICITY_WEIGHT = 1;
+    
     // Group ranges by biomarker_type and return the most specific match
     const rangeMap: Record<string, any> = {};
     ranges.forEach(range => {
@@ -58,7 +73,7 @@ router.get('/ranges', authMiddleware, async (req, res) => {
         const hasSexNew = range.demographics?.sex !== undefined;
         
         const specificityScore = (hasAge: boolean, hasSex: boolean) => 
-          (hasAge ? 2 : 0) + (hasSex ? 1 : 0);
+          (hasAge ? AGE_SPECIFICITY_WEIGHT : 0) + (hasSex ? SEX_SPECIFICITY_WEIGHT : 0);
         
         if (specificityScore(hasAgeNew, hasSexNew) > specificityScore(hasAgeCurrent, hasSexCurrent)) {
           rangeMap[key] = range;
@@ -76,6 +91,57 @@ router.get('/ranges', authMiddleware, async (req, res) => {
 // Create a new biomarker range (admin only)
 router.post('/ranges', authMiddleware, async (req, res) => {
   try {
+    // Validate required fields
+    const { biomarker_type, label, unit, low, high } = req.body;
+    
+    if (!biomarker_type || !label || !unit || low === undefined || high === undefined) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: biomarker_type, label, unit, low, and high are required.' 
+      });
+    }
+    
+    // Validate biomarker_type
+    const validTypes = ['glucose', 'ldl', 'hemoglobin', 'vitaminD'];
+    if (!validTypes.includes(biomarker_type)) {
+      return res.status(400).json({ 
+        error: `Invalid biomarker_type. Must be one of: ${validTypes.join(', ')}` 
+      });
+    }
+    
+    // Validate numeric ranges
+    if (typeof low !== 'number' || typeof high !== 'number') {
+      return res.status(400).json({ error: 'low and high must be numbers.' });
+    }
+    
+    if (low < 0 || high < 0) {
+      return res.status(400).json({ error: 'low and high must be non-negative numbers.' });
+    }
+    
+    if (low >= high) {
+      return res.status(400).json({ error: 'low must be less than high.' });
+    }
+    
+    // Validate demographics if provided
+    if (req.body.demographics) {
+      const { age_min, age_max, sex } = req.body.demographics;
+      
+      if (age_min !== undefined && (typeof age_min !== 'number' || age_min < 0 || age_min > 150)) {
+        return res.status(400).json({ error: 'demographics.age_min must be a number between 0 and 150.' });
+      }
+      
+      if (age_max !== undefined && (typeof age_max !== 'number' || age_max < 0 || age_max > 150)) {
+        return res.status(400).json({ error: 'demographics.age_max must be a number between 0 and 150.' });
+      }
+      
+      if (age_min !== undefined && age_max !== undefined && age_min >= age_max) {
+        return res.status(400).json({ error: 'demographics.age_min must be less than age_max.' });
+      }
+      
+      if (sex !== undefined && !['Male', 'Female', 'Other'].includes(sex)) {
+        return res.status(400).json({ error: 'demographics.sex must be Male, Female, or Other.' });
+      }
+    }
+    
     const range = new BiomarkerRange(req.body);
     await range.save();
     res.status(201).json({ range });

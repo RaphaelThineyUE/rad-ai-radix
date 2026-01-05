@@ -3,7 +3,8 @@ import type {
   Patient, 
   RadiologyReport, 
   TreatmentRecord, 
-  AuthResponse 
+  AuthResponse,
+  BiomarkerRange
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -233,11 +234,11 @@ class ApiClient {
   }
 
   // Biomarker endpoints
-  async getBiomarkerRanges(age?: number, sex?: string): Promise<{ ranges: Array<any> }> {
+  async getBiomarkerRanges(age?: number, sex?: string): Promise<{ ranges: BiomarkerRange[] }> {
     const params = new URLSearchParams();
     if (age !== undefined) params.append('age', age.toString());
     if (sex) params.append('sex', sex);
-    return this.request<{ ranges: Array<any> }>(`/biomarkers/ranges?${params}`);
+    return this.request<{ ranges: BiomarkerRange[] }>(`/biomarkers/ranges?${params}`);
   }
 
   async initializeBiomarkerRanges(): Promise<{ message: string }> {
