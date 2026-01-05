@@ -200,9 +200,106 @@ export default function PatientAnalytics() {
     (patient) => patient.treatmentStatus === 'pending',
   ).length;
 
+export default function PatientAnalytics() {
+  const [treatments, setTreatments] = useState<TreatmentRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTreatments = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.getTreatments();
+        if (isMounted) {
+          setTreatments(response.treatments || []);
+          setErrorMessage(null);
+        }
+      } catch (error) {
+        console.error('Failed to load treatments', error);
+        if (isMounted) {
+          setErrorMessage('Unable to load treatment outcomes right now.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadTreatments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const statusStats = useMemo(() => {
+    const counts = treatments.reduce<Record<string, number>>((acc, treatment) => {
+      const statusLabel = treatment.status?.trim() ? treatment.status.trim() : 'Unknown';
+      acc[statusLabel] = (acc[statusLabel] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts).map(([name, value]) => ({
+      name: formatStatusLabel(name),
+      value
+    }));
+  }, [treatments]);
+
+  const treatmentTypeStats = useMemo(() => {
+    const counts = treatments.reduce<
+      Record<string, { name: string; total: number; completed: number }>
+    >((acc, treatment) => {
+      const typeLabel = treatment.treatment_type?.trim() || 'Unspecified';
+      if (!acc[typeLabel]) {
+        acc[typeLabel] = { name: typeLabel, total: 0, completed: 0 };
+      }
+      acc[typeLabel].total += 1;
+      if (treatment.status && isCompletedStatus(treatment.status)) {
+        acc[typeLabel].completed += 1;
+      }
+      return acc;
+    }, {});
+
+    return Object.values(counts);
+  }, [treatments]);
+
+  const statTotals = useMemo(() => {
+    const activeCount = treatments.filter((treatment) => {
+      const normalized = treatment.status?.toLowerCase() ?? '';
+      return normalized.includes('active') || normalized.includes('progress');
+    }).length;
+
+    const completedCount = treatments.filter((treatment) =>
+      treatment.status ? isCompletedStatus(treatment.status) : false
+    ).length;
+
+    const pendingCount = treatments.filter((treatment) => {
+      const normalized = treatment.status?.toLowerCase() ?? '';
+      return normalized.includes('pending') || normalized.includes('scheduled');
+    }).length;
+
+    return {
+      total: treatments.length,
+      active: activeCount,
+      completed: completedCount,
+      pending: pendingCount
+    };
+  }, [treatments]);
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
+          <p className="text-sm text-gray-500">
+            Track treatment outcomes and completion trends.
+          </p>
+        </div>
+        {isLoading && <span className="text-sm text-gray-400">Loading...</span>}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-md p-6">
@@ -229,6 +326,17 @@ export default function PatientAnalytics() {
           </div>
           <div className="text-gray-600">Pending Reviews</div>
         </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {metrics.map((metric) => (
+          <div key={metric.title} className="bg-white rounded-xl shadow-md p-6 space-y-3">
+            <div className="text-sm font-semibold text-gray-500">{metric.title}</div>
+            <div className={`text-3xl font-bold ${metric.accent}`}>{metric.value}</div>
+            <div className="text-xs text-gray-500">{metric.helper}</div>
+            <TrendIndicator trend={metric.trend} />
+          </div>
+        ))}
       </div>
 
       {error && (
@@ -262,10 +370,13 @@ export default function PatientAnalytics() {
               />
               <YAxis allowDecimals={false} />
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  value,
-                  name.charAt(0).toUpperCase() + name.slice(1),
-                ]}
+                formatter={(value: number, name: string) => {
+                  const safeName =
+                    typeof name === 'string' && name.length > 0
+                      ? name.charAt(0).toUpperCase() + name.slice(1)
+                      : name ?? '';
+                  return [value, safeName];
+                }}
               />
               <Legend />
               <Bar dataKey="low" name="Low" stackId="a" fill="#f97316" />
