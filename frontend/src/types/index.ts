@@ -13,7 +13,7 @@ export interface Patient {
   created_by?: string;
   mrn?: string;
   date_of_birth?: string;
-  gender?: 'Male' | 'Female' | 'Other' | 'Unknown';
+  gender?: 'Male' | 'Female' | 'Other';
   ethnicity?: string;
   diagnosis_date?: string;
   cancer_type?: string;
