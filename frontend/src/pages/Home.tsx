@@ -1,3 +1,22 @@
+import ReportCard from '../components/reports/ReportCard';
+
+const recentReports = [
+  {
+    id: 'rr-001',
+    patientName: 'Jamie Rivera',
+    reportDate: 'Aug 12, 2024',
+    birads: 2 as const,
+    status: 'Reviewed',
+  },
+  {
+    id: 'rr-002',
+    patientName: 'Morgan Lee',
+    reportDate: 'Aug 08, 2024',
+    birads: 4 as const,
+    status: 'Needs Review',
+  },
+];
+
 export default function Home() {
   return (
     <div className="space-y-8">
@@ -29,8 +48,19 @@ export default function Home() {
         <h3 className="text-xl font-semibold text-gray-900 mb-4">
           Recent Reports
         </h3>
-        <div className="text-center py-12 text-gray-500">
-          No reports yet. Upload your first report to get started.
+        <div className="space-y-4">
+          {recentReports.map((report) => (
+            <ReportCard
+              key={report.id}
+              patientName={report.patientName}
+              reportDate={report.reportDate}
+              birads={report.birads}
+              status={report.status}
+              onSelect={() => {
+                console.log(`Selected report ${report.id}`);
+              }}
+            />
+          ))}
         </div>
       </div>
     </div>
