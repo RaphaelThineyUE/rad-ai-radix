@@ -88,18 +88,7 @@ class ApiClient {
   // Patient endpoints
   async getPatients(filters: Record<string, string> = {}): Promise<Patient[]> {
     const params = new URLSearchParams(filters);
-    const response = await this.request<Patient[] | { patients: Patient[] }>(`/patients?${params}`);
-
-    if (Array.isArray(response)) {
-      return response;
-    }
-
-    if (response && Array.isArray((response as { patients?: Patient[] }).patients)) {
-      return (response as { patients: Patient[] }).patients;
-    }
-
-    console.error('Unexpected patients response format:', response);
-    return [];
+    return this.request<Patient[]>(`/patients?${params}`);
   }
 
   async createPatient(data: Partial<Patient>): Promise<Patient> {

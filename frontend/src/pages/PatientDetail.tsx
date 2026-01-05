@@ -1,150 +1,155 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import PatientForm from '../components/patients/PatientForm';
 import { apiClient } from '../lib/api';
+import type { Patient } from '../types';
 
-type ProcessingStatus = 'idle' | 'processing' | 'completed' | 'error';
+const formatDate = (value?: string) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+};
+
+const toDateInput = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+};
 
 export default function PatientDetail() {
   const { id } = useParams();
-  const [reportId, setReportId] = useState('');
-  const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [lastProcessedId, setLastProcessedId] = useState('');
+  const [showEdit, setShowEdit] = useState(false);
+  const queryClient = useQueryClient();
 
-  const isProcessing = processingStatus === 'processing';
+  const { data: patient, isLoading, isError } = useQuery({
+    queryKey: ['patient', id],
+    queryFn: () => apiClient.getPatient(id as string),
+    enabled: Boolean(id)
+  });
 
-  const handleProcessReport = async () => {
-    if (!reportId.trim()) {
-      return;
+  const updateMutation = useMutation({
+    mutationFn: (payload: Partial<Patient>) => apiClient.updatePatient(id as string, payload),
+    onSuccess: async updated => {
+      toast.success('Patient updated successfully');
+      queryClient.setQueryData(['patient', id], updated);
+      await queryClient.invalidateQueries({ queryKey: ['patients'] });
+      setShowEdit(false);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Unable to update patient');
     }
+  });
 
-    setProcessingStatus('processing');
-    setErrorMessage('');
-    setLastProcessedId('');
-
-    try {
-      await apiClient.processReport(reportId.trim());
-      setLastProcessedId(reportId.trim());
-      setProcessingStatus('completed');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Processing failed';
-      setErrorMessage(message);
-      setProcessingStatus('error');
-    }
-  };
+  const formDefaults = useMemo(() => {
+    if (!patient) return undefined;
+    return {
+      full_name: patient.full_name,
+      date_of_birth: toDateInput(patient.date_of_birth),
+      gender: patient.gender,
+      ethnicity: patient.ethnicity ?? '',
+      diagnosis_date: toDateInput(patient.diagnosis_date),
+      cancer_type: patient.cancer_type,
+      cancer_stage: patient.cancer_stage,
+      tumor_size_cm: patient.tumor_size_cm ?? '',
+      lymph_node_positive: patient.lymph_node_positive,
+      er_status: patient.er_status,
+      pr_status: patient.pr_status,
+      her2_status: patient.her2_status,
+      menopausal_status: patient.menopausal_status ?? '',
+      initial_treatment_plan: patient.initial_treatment_plan ?? ''
+    };
+  }, [patient]);
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Patient Details
-        </h2>
-        {isLoading && (
-          <p className="text-gray-500">Loading patient details...</p>
-        )}
-        {!isLoading && errorMessage && (
-          <p className="text-red-600">{errorMessage}</p>
-        )}
-        {!isLoading && !errorMessage && patientDetail && (
-          <div className="space-y-2 text-gray-600">
-            <p>
-              <span className="font-semibold text-gray-900">Name:</span>{' '}
-              {patientDetail.patient.full_name || 'Unknown'}
-            </p>
-            {patientDetail.patient.mrn && (
-              <p>
-                <span className="font-semibold text-gray-900">MRN:</span>{' '}
-                {patientDetail.patient.mrn}
-              </p>
-            )}
-            <p>
-              <span className="font-semibold text-gray-900">Patient ID:</span>{' '}
-              {patientDetail.patient._id}
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Date of Birth:</span>{' '}
-              {formatDateValue(patientDetail.patient.date_of_birth)}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">
-          Upload Radiology Report
-        </h3>
-        <form className="space-y-4" onSubmit={handleUpload}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="report-upload">
-              PDF Report
-            </label>
-            <input
-              id="report-upload"
-              type="file"
-              accept="application/pdf"
-              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-gray-700 file:mr-4 file:rounded-lg file:border-0 file:bg-pink-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-pink-700 hover:file:bg-pink-100"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isUploading}
-            className="inline-flex items-center justify-center rounded-xl bg-pink-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:bg-pink-400"
-          >
-            {isUploading ? 'Uploading...' : 'Upload Report'}
-          </button>
-        </form>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900">Process a Report</h3>
-          <p id="report-id-description" className="text-gray-600">
-            Provide a report ID to run AI processing for this patient.
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">Patient Details</h2>
+          <p className="text-gray-600">Review the patient profile and clinical info.</p>
         </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label htmlFor="report-id-input" className="flex-1 text-sm font-medium text-gray-700">
-            Report ID
-            <input
-              id="report-id-input"
-              type="text"
-              value={reportId}
-              onChange={(event) => setReportId(event.target.value)}
-              disabled={isProcessing}
-              placeholder="e.g. 64f1c2..."
-              aria-describedby="report-id-description"
-              className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-2 text-gray-900 shadow-sm focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-200 disabled:bg-gray-100"
-            />
-          </label>
-
+        {patient && (
           <button
             type="button"
-            onClick={handleProcessReport}
-            disabled={isProcessing || reportId.trim().length === 0}
-            className="inline-flex items-center justify-center rounded-xl bg-pink-600 px-4 py-2 text-white shadow-sm transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:bg-pink-300"
+            onClick={() => setShowEdit(prev => !prev)}
+            className="px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
           >
-            {isProcessing ? 'Processing...' : 'Run AI Processing'}
+            {showEdit ? 'Close Edit' : 'Edit Patient'}
           </button>
-        </div>
-
-        {isProcessing && (
-          <div className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-700">
-            Processing is running. Actions are disabled until it finishes.
-          </div>
         )}
+      </div>
 
-        {processingStatus === 'completed' && (
-          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            Processing complete{lastProcessedId ? ` for report ${lastProcessedId}` : ''}. You can
-            continue reviewing results.
-          </div>
-        )}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        {isLoading && <div className="text-center text-gray-500">Loading patient...</div>}
+        {isError && <div className="text-center text-red-600">Unable to load patient.</div>}
+        {!isLoading && !isError && patient && (
+          <div className="space-y-6">
+            <div className="border border-gray-200 rounded-xl p-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{patient.full_name}</h3>
+                  <p className="text-sm text-gray-600">{patient.gender}</p>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <p>Date of Birth: {formatDate(patient.date_of_birth)}</p>
+                  <p>Diagnosis Date: {formatDate(patient.diagnosis_date)}</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 text-sm text-gray-700 md:grid-cols-2">
+                <p>
+                  <span className="font-medium">Cancer Type:</span> {patient.cancer_type}
+                </p>
+                <p>
+                  <span className="font-medium">Stage:</span> {patient.cancer_stage}
+                </p>
+                <p>
+                  <span className="font-medium">Tumor Size:</span>{' '}
+                  {patient.tumor_size_cm ? `${patient.tumor_size_cm} cm` : '—'}
+                </p>
+                <p>
+                  <span className="font-medium">Lymph Node Positive:</span>{' '}
+                  {patient.lymph_node_positive ? 'Yes' : 'No'}
+                </p>
+                <p>
+                  <span className="font-medium">ER Status:</span> {patient.er_status}
+                </p>
+                <p>
+                  <span className="font-medium">PR Status:</span> {patient.pr_status}
+                </p>
+                <p>
+                  <span className="font-medium">HER2 Status:</span> {patient.her2_status}
+                </p>
+                <p>
+                  <span className="font-medium">Ethnicity:</span> {patient.ethnicity || '—'}
+                </p>
+                <p>
+                  <span className="font-medium">Menopausal Status:</span>{' '}
+                  {patient.menopausal_status || '—'}
+                </p>
+              </div>
+              {patient.initial_treatment_plan && (
+                <div className="mt-4">
+                  <p className="font-medium text-gray-900">Initial Treatment Plan</p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    {patient.initial_treatment_plan}
+                  </p>
+                </div>
+              )}
+            </div>
 
-        {processingStatus === 'error' && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage || 'Processing failed. Please try again.'}
+            {showEdit && (
+              <div className="border border-pink-200 rounded-xl p-4">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Edit Patient</h4>
+                <PatientForm
+                  defaultValues={formDefaults}
+                  onSubmit={payload => updateMutation.mutate(payload)}
+                  submitLabel="Update Patient"
+                  loading={updateMutation.isPending}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
