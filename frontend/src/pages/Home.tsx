@@ -1,33 +1,59 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { apiClient } from '../lib/api';
-
-type ProcessingStatus = 'idle' | 'processing' | 'completed' | 'error';
+import type { RadiologyReport } from '../types';
 
 export default function Home() {
-  const [reportId, setReportId] = useState('');
-  const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [lastProcessedId, setLastProcessedId] = useState('');
+  const [reports, setReports] = useState<RadiologyReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedReport, setSelectedReport] = useState<RadiologyReport | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const isProcessing = processingStatus === 'processing';
+  const totalReports = reports.length;
 
-  const handleProcessReport = async () => {
-    if (!reportId.trim()) {
+  const loadReports = async () => {
+    try {
+      setIsLoading(true);
+      const { reports: fetchedReports } = await apiClient.getReports();
+      setReports(fetchedReports);
+    } catch (error) {
+      toast.error(error.message || 'Failed to load reports');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReports();
+  }, []);
+
+  const reportStats = useMemo(() => {
+    const analyzedCount = reports.filter(report => report.ai_analysis).length;
+    return {
+      analyzedCount,
+      needsReviewCount: totalReports - analyzedCount
+    };
+  }, [reports, totalReports]);
+
+  const handleDelete = async () => {
+    if (!selectedReport) {
       return;
     }
 
-    setProcessingStatus('processing');
-    setErrorMessage('');
-    setLastProcessedId('');
+    const previousReports = reports;
+    setIsDeleting(true);
+    setReports(prev => prev.filter(report => report._id !== selectedReport._id));
 
     try {
-      await apiClient.processReport(reportId.trim());
-      setLastProcessedId(reportId.trim());
-      setProcessingStatus('completed');
+      await apiClient.deleteReport(selectedReport._id);
+      toast.success('Report deleted');
+      setSelectedReport(null);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Processing failed';
-      setErrorMessage(message);
-      setProcessingStatus('error');
+      setReports(previousReports);
+      toast.error(error.message || 'Failed to delete report');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -106,122 +132,84 @@ export default function Home() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="text-3xl font-bold text-pink-600 mb-2">
-            {stats.total}
-          </div>
+          <div className="text-3xl font-bold text-pink-600 mb-2">{totalReports}</div>
           <div className="text-gray-600">Total Reports</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="text-3xl font-bold text-green-600 mb-2">
-            {stats.analyzed}
+            {reportStats.analyzedCount}
           </div>
           <div className="text-gray-600">Analyzed</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="text-3xl font-bold text-yellow-600 mb-2">
-            {stats.needsReview}
+            {reportStats.needsReviewCount}
           </div>
           <div className="text-gray-600">Needs Review</div>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-gray-900">Recent Reports</h3>
-          <span className="text-sm text-gray-500">
-            {reports.length} total
-          </span>
-        </div>
-
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+          Recent Reports
+        </h3>
         {isLoading ? (
           <div className="text-center py-12 text-gray-500">Loading reports...</div>
-        ) : error ? (
-          <div className="text-center py-12 text-rose-600">{error}</div>
         ) : reports.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             No reports yet. Upload your first report to get started.
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
-            {reports.map((report) => (
+          <div className="space-y-4">
+            {reports.map(report => (
               <div
                 key={report._id}
-                className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-gray-50/70 p-5 md:flex-row md:items-center md:justify-between"
               >
                 <div>
-                  <p className="text-sm text-rose-500 uppercase tracking-[0.15em]">
-                    {report.status || 'pending'}
-                  </p>
-                  <h4 className="text-lg font-semibold text-gray-900">
-                    {report.filename || report.report_type || 'Radiology report'}
-                  </h4>
-                  <p className="text-sm text-gray-500">
-                    Report date: {report.report_date || 'Not provided'}
-                  </p>
+                  <div className="text-sm text-gray-500">
+                    {new Date(report.report_date).toLocaleDateString()}
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {report.report_type}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Patient ID: {report.patient_id}
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedReport(report)}
-                  className="inline-flex items-center justify-center rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
-                >
-                  View details
-                </button>
+                <div className="flex items-center gap-3">
+                  {report.ai_analysis ? (
+                    <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                      Analyzed
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
+                      Needs review
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedReport(report)}
+                    className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900">Process a Report</h3>
-          <p className="text-gray-600">
-            Submit a report ID to run AI processing. We will show live status updates.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label className="flex-1 text-sm font-medium text-gray-700">
-            Report ID
-            <input
-              type="text"
-              value={reportId}
-              onChange={(event) => setReportId(event.target.value)}
-              disabled={isProcessing}
-              placeholder="e.g. 64f1c2..."
-              className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-2 text-gray-900 shadow-sm focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-200 disabled:bg-gray-100"
-            />
-          </label>
-
-          <button
-            type="button"
-            onClick={handleProcessReport}
-            disabled={isProcessing || reportId.trim().length === 0}
-            className="inline-flex items-center justify-center rounded-xl bg-pink-600 px-4 py-2 text-white shadow-sm transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:bg-pink-300"
-          >
-            {isProcessing ? 'Processing...' : 'Run AI Processing'}
-          </button>
-        </div>
-
-        {isProcessing && (
-          <div className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-700">
-            Processing is running. Actions are disabled until it finishes.
-          </div>
-        )}
-
-        {processingStatus === 'completed' && (
-          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            Processing complete{lastProcessedId ? ` for report ${lastProcessedId}` : ''}. You can
-            continue reviewing results.
-          </div>
-        )}
-
-        {processingStatus === 'error' && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage || 'Processing failed. Please try again.'}
-          </div>
-        )}
-      </div>
+      <ConfirmDialog
+        isOpen={Boolean(selectedReport)}
+        title="Delete report?"
+        description="This action cannot be undone. The report will be removed permanently."
+        confirmLabel="Delete report"
+        isConfirming={isDeleting}
+        onCancel={() => setSelectedReport(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
