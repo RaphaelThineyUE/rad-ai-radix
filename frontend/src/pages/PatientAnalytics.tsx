@@ -204,10 +204,13 @@ export default function PatientAnalytics() {
               />
               <YAxis allowDecimals={false} />
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  value,
-                  name.charAt(0).toUpperCase() + name.slice(1),
-                ]}
+                formatter={(value: number, name: string) => {
+                  const safeName =
+                    typeof name === 'string' && name.length > 0
+                      ? name.charAt(0).toUpperCase() + name.slice(1)
+                      : name ?? '';
+                  return [value, safeName];
+                }}
               />
               <Legend />
               <Bar dataKey="low" name="Low" stackId="a" fill="#f97316" />
