@@ -8,34 +8,46 @@ import {
 
 export default function PatientDetail() {
   const { id } = useParams();
+
+  const formatDateOffset = (daysOffset: number): string => {
+    const date = new Date();
+    date.setDate(date.getDate() + daysOffset);
+    return date.toISOString().slice(0, 10);
+  };
+
   const biomarkerResults = useMemo(
-    () =>
-      [
+    () => {
+      const twoDaysAgo = formatDateOffset(-2);
+      const oneDayAgo = formatDateOffset(-1);
+      const today = formatDateOffset(0);
+
+      return [
         {
           name: 'HER2',
           status: 'positive',
           method: 'IHC 3+',
-          collectedAt: '2024-01-22',
+          collectedAt: twoDaysAgo,
         },
         {
           name: 'PD-L1',
           status: 'negative',
           method: 'TPS <1%',
-          collectedAt: '2024-01-22',
+          collectedAt: twoDaysAgo,
         },
         {
           name: 'ALK',
           status: 'unknown',
           method: 'Pending confirmatory FISH',
-          collectedAt: '2024-01-24',
+          collectedAt: oneDayAgo,
         },
         {
           name: 'EGFR',
           status: 'positive',
           method: 'Exon 19 del',
-          collectedAt: '2024-01-22',
+          collectedAt: today,
         },
-      ] as const,
+      ] as const;
+    },
     [],
   );
   const biomarkerSummary = useMemo(() => {
