@@ -12,11 +12,10 @@ router.use(authMiddleware);
 router.get('/', async (req: AuthRequest, res) => {
   try {
     const { patient_id } = req.query;
-
-    const patientId = typeof patient_id === 'string' ? patient_id : Array.isArray(patient_id) ? patient_id[0] : undefined;
+    
     const filter: Record<string, unknown> = { created_by: req.user?.email };
-
-    if (patientId) filter.patient_id = patientId;
+    
+    if (patient_id) filter.patient_id = String(patient_id);
 
     const treatments = await TreatmentRecord.find(filter)
       .populate('patient_id', 'full_name')
@@ -45,7 +44,7 @@ router.post('/',
 
       const treatment = new TreatmentRecord({
         ...req.body,
-        created_by: req.user.email
+        created_by: req.user?.email
       });
 
       await treatment.save();
@@ -66,7 +65,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const treatment = await TreatmentRecord.findOne({
       _id: req.params.id,
-      created_by: req.user.email
+      created_by: req.user?.email
     }).populate('patient_id', 'full_name');
 
     if (!treatment) {
@@ -96,7 +95,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     });
 
     const treatment = await TreatmentRecord.findOneAndUpdate(
-      { _id: req.params.id, created_by: req.user.email },
+      { _id: req.params.id, created_by: req.user?.email },
       updates,
       { new: true, runValidators: true }
     ).populate('patient_id', 'full_name');
@@ -117,7 +116,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const treatment = await TreatmentRecord.findOneAndDelete({
       _id: req.params.id,
-      created_by: req.user.email
+      created_by: req.user?.email
     });
 
     if (!treatment) {

@@ -67,7 +67,7 @@ router.post('/consolidate-reports',
       // Get all completed reports for this patient
       const reports = await RadiologyReport.find({
         patient_id,
-        created_by: req.user.email,
+        created_by: req.user?.email,
         status: 'completed'
       }).sort({ created_date: 1 });
 
@@ -110,7 +110,7 @@ router.post('/compare-treatments',
       // Get patient data
       const patient = await Patient.findOne({
         _id: patient_id,
-        created_by: req.user.email
+        created_by: req.user?.email
       });
 
       if (!patient) {

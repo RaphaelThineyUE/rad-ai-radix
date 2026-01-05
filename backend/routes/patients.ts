@@ -22,22 +22,18 @@ router.use(authMiddleware);
 router.get('/', async (req: AuthRequest, res) => {
   try {
     const { stage, cancer_type, sort_by, sort_order } = req.query;
-
-    const stageValue = getQueryString(stage);
-    const cancerTypeValue = getQueryString(cancer_type);
-    const sortBy = getQueryString(sort_by);
-    const sortOrder = getQueryString(sort_order);
-
+    
     const filter: Record<string, unknown> = { created_by: req.user?.email };
-
-    if (stageValue) filter.cancer_stage = stageValue;
-    if (cancerTypeValue) filter.cancer_type = new RegExp(cancerTypeValue, 'i');
+    
+    if (stage) filter.cancer_stage = String(stage);
+    if (cancer_type) filter.cancer_type = new RegExp(String(cancer_type), 'i');
 
     let query = Patient.find(filter);
 
-    if (sortBy) {
-      const order = sortOrder === 'desc' ? -1 : 1;
-      query = query.sort({ [sortBy]: order });
+    if (sort_by) {
+      const sortKey = String(sort_by);
+      const order = sort_order === 'desc' ? -1 : 1;
+      query = query.sort({ [sortKey]: order });
     } else {
       query = query.sort({ created_date: -1 });
     }
@@ -85,7 +81,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const patient = await Patient.findOne({
       _id: req.params.id,
-      created_by: req.user.email
+      created_by: req.user?.email
     });
 
     if (!patient) {
@@ -117,7 +113,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     });
 
     const patient = await Patient.findOneAndUpdate(
-      { _id: req.params.id, created_by: req.user.email },
+      { _id: req.params.id, created_by: req.user?.email },
       updates,
       { new: true, runValidators: true }
     );
@@ -138,7 +134,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const patient = await Patient.findOneAndDelete({
       _id: req.params.id,
-      created_by: req.user.email
+      created_by: req.user?.email
     });
 
     if (!patient) {

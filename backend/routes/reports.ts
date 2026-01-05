@@ -29,7 +29,7 @@ const upload = multer({
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF files are allowed'));
+      (cb as (error: Error | null, acceptFile: boolean) => void)(new Error('Only PDF files are allowed'), false);
     }
   },
   limits: {
@@ -83,7 +83,7 @@ router.post('/', async (req: AuthRequest, res) => {
     }
 
     const report = new RadiologyReport({
-      created_by: req.user.email,
+      created_by: req.user?.email,
       patient_id,
       filename,
       file_url,
@@ -110,7 +110,7 @@ router.post('/process', async (req: AuthRequest, res) => {
 
     const report = await RadiologyReport.findOne({
       _id: report_id,
-      created_by: req.user.email
+      created_by: req.user?.email
     });
 
     if (!report) {
@@ -173,14 +173,11 @@ router.post('/process', async (req: AuthRequest, res) => {
 router.get('/', async (req: AuthRequest, res) => {
   try {
     const { patient_id, status } = req.query;
-
-    const patientId = typeof patient_id === 'string' ? patient_id : Array.isArray(patient_id) ? patient_id[0] : undefined;
-    const statusValue = typeof status === 'string' ? status : Array.isArray(status) ? status[0] : undefined;
-
+    
     const filter: Record<string, unknown> = { created_by: req.user?.email };
-
-    if (patientId) filter.patient_id = patientId;
-    if (statusValue) filter.status = statusValue;
+    
+    if (patient_id) filter.patient_id = String(patient_id);
+    if (status) filter.status = String(status);
 
     const reports = await RadiologyReport.find(filter)
       .populate('patient_id', 'full_name')
@@ -198,7 +195,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const report = await RadiologyReport.findOne({
       _id: req.params.id,
-      created_by: req.user.email
+      created_by: req.user?.email
     }).populate('patient_id', 'full_name');
 
     if (!report) {
@@ -225,7 +222,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     });
 
     const report = await RadiologyReport.findOneAndUpdate(
-      { _id: req.params.id, created_by: req.user.email },
+      { _id: req.params.id, created_by: req.user?.email },
       updates,
       { new: true, runValidators: true }
     );
@@ -246,7 +243,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const report = await RadiologyReport.findOne({
       _id: req.params.id,
-      created_by: req.user.email
+      created_by: req.user?.email
     });
 
     if (!report) {
