@@ -17,10 +17,10 @@ export interface Patient {
     email?: string;
     address?: string;
   };
-  created_date?: string;
-  updated_date?: string;
   createdAt?: string;
   updatedAt?: string;
+  created_date?: string;
+  updated_date?: string;
 }
 
 export interface RadiologyReport {
@@ -58,29 +58,12 @@ export interface RadiologyReport {
   exam?: string;
   comparison?: string;
   ai_analysis?: Record<string, any>;
-  birads?: {
-    value?: number;
-    confidence?: 'low' | 'medium' | 'high';
-    evidence?: string[];
-  };
-  breast_density?: {
-    value?: string;
-    evidence?: string[];
-  };
-  exam?: {
-    type?: string;
-    laterality?: string;
-    evidence?: string[];
-  };
-  comparison?: {
-    prior_exam_date?: string;
-    evidence?: string[];
-  };
-  red_flags?: string[];
+  status?: 'pending' | 'processing' | 'completed' | 'failed';
   processing_time_ms?: number;
-  raw_text?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  created_date?: string;
+  updated_date?: string;
 }
 
 export interface TreatmentRecord {
@@ -96,8 +79,10 @@ export interface TreatmentRecord {
     dosage: string;
     frequency: string;
   }>;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  created_date?: string;
+  updated_date?: string;
 }
 
 export interface AuthResponse {
