@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiClient } from '../lib/api';
 
@@ -13,7 +13,11 @@ export default function PatientDetail() {
 
   const isProcessing = processingStatus === 'processing';
 
-  const handleProcessReport = async () => {
+  const handleProcessReport = async (event?: FormEvent) => {
+    if (event) {
+      event.preventDefault();
+    }
+    
     if (!reportId.trim()) {
       return;
     }
@@ -50,7 +54,7 @@ export default function PatientDetail() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <form onSubmit={handleProcessReport} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <label htmlFor="report-id-input" className="flex-1 text-sm font-medium text-gray-700">
             Report ID
             <input
@@ -66,14 +70,13 @@ export default function PatientDetail() {
           </label>
 
           <button
-            type="button"
-            onClick={handleProcessReport}
+            type="submit"
             disabled={isProcessing || reportId.trim().length === 0}
             className="inline-flex items-center justify-center rounded-xl bg-pink-600 px-4 py-2 text-white shadow-sm transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:bg-pink-300"
           >
             {isProcessing ? 'Processing...' : 'Run AI Processing'}
           </button>
-        </div>
+        </form>
 
         {isProcessing && (
           <div className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-700">
