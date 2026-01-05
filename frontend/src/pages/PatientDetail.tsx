@@ -45,20 +45,22 @@ export default function PatientDetail() {
       <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
         <div>
           <h3 className="text-xl font-semibold text-gray-900">Process a Report</h3>
-          <p className="text-gray-600">
+          <p id="report-id-description" className="text-gray-600">
             Provide a report ID to run AI processing for this patient.
           </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label className="flex-1 text-sm font-medium text-gray-700">
+          <label htmlFor="report-id-input" className="flex-1 text-sm font-medium text-gray-700">
             Report ID
             <input
+              id="report-id-input"
               type="text"
               value={reportId}
               onChange={(event) => setReportId(event.target.value)}
               disabled={isProcessing}
               placeholder="e.g. 64f1c2..."
+              aria-describedby="report-id-description"
               className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-2 text-gray-900 shadow-sm focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-200 disabled:bg-gray-100"
             />
           </label>
