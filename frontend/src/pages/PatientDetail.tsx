@@ -46,7 +46,34 @@ export default function PatientDetail() {
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           Patient Details
         </h2>
-        <p className="text-gray-600">Patient ID: {id}</p>
+        {isLoading && (
+          <p className="text-gray-500">Loading patient details...</p>
+        )}
+        {!isLoading && errorMessage && (
+          <p className="text-red-600">{errorMessage}</p>
+        )}
+        {!isLoading && !errorMessage && patientDetail && (
+          <div className="space-y-2 text-gray-600">
+            <p>
+              <span className="font-semibold text-gray-900">Name:</span>{' '}
+              {patientDetail.patient.full_name || 'Unknown'}
+            </p>
+            {patientDetail.patient.mrn && (
+              <p>
+                <span className="font-semibold text-gray-900">MRN:</span>{' '}
+                {patientDetail.patient.mrn}
+              </p>
+            )}
+            <p>
+              <span className="font-semibold text-gray-900">Patient ID:</span>{' '}
+              {patientDetail.patient._id}
+            </p>
+            <p>
+              <span className="font-semibold text-gray-900">Date of Birth:</span>{' '}
+              {formatDateValue(patientDetail.patient.date_of_birth)}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-lg p-6">
