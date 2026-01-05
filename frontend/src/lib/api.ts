@@ -102,19 +102,19 @@ class ApiClient {
     return [];
   }
 
-  async createPatient(data: Partial<Patient>): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>('/patients', {
+  async createPatient(data: Partial<Patient>): Promise<Patient> {
+    return this.request<Patient>('/patients', {
       method: 'POST',
       body: JSON.stringify(data)
     });
   }
 
-  async getPatient(id: string): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>(`/patients/${id}`);
+  async getPatient(id: string): Promise<Patient> {
+    return this.request<Patient>(`/patients/${id}`);
   }
 
-  async updatePatient(id: string, data: Partial<Patient>): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>(`/patients/${id}`, {
+  async updatePatient(id: string, data: Partial<Patient>): Promise<Patient> {
+    return this.request<Patient>(`/patients/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     });
@@ -127,38 +127,66 @@ class ApiClient {
   }
 
   // Report endpoints
-  async uploadFile(file: File): Promise<{ file_path: string; extracted_text?: string }> {
+  async uploadFile(
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<{ file_path: string; extracted_text?: string }> {
     const formData = new FormData();
     formData.append('file', file);
-
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${this.baseURL}/reports/upload`, {
-      method: 'POST',
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` })
-      },
-      body: formData
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Upload failed');
+    if (patient_id) {
+      formData.append('patient_id', patient_id);
     }
 
-    return response.json();
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${this.baseURL}/reports/upload`);
+      xhr.responseType = 'json';
+
+      const token = localStorage.getItem('token');
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (!onProgress || !event.lengthComputable) {
+          return;
+        }
+        const progress = Math.round((event.loaded / event.total) * 100);
+        onProgress(progress);
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response);
+          return;
+        }
+        const errorMessage =
+          (xhr.response as { error?: string } | null)?.error || 'Upload failed';
+        reject(new Error(errorMessage));
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Upload failed'));
+      });
+
+      xhr.send(formData);
+    });
   }
 
-  async createReport(data: Partial<RadiologyReport>): Promise<{ report: RadiologyReport }> {
-    return this.request<{ report: RadiologyReport }>('/reports', {
+  async createReport(data: Partial<RadiologyReport>): Promise<RadiologyReport> {
+    return this.request<RadiologyReport>('/reports', {
       method: 'POST',
       body: JSON.stringify(data)
     });
   }
 
-  async processReport(report_id: string): Promise<{ analysis: Record<string, any> }> {
-    return this.request<{ analysis: Record<string, any> }>('/reports/process', {
+  async processReport(
+    report_id: string,
+    patient_id?: string
+  ): Promise<RadiologyReport> {
+    return this.request<RadiologyReport>('/reports/process', {
       method: 'POST',
-      body: JSON.stringify({ report_id })
+      body: JSON.stringify({ report_id, patient_id })
     });
   }
 
@@ -177,8 +205,8 @@ class ApiClient {
     throw new Error('Unexpected response format from /reports endpoint');
   }
 
-  async getReport(id: string): Promise<{ report: RadiologyReport }> {
-    return this.request<{ report: RadiologyReport }>(`/reports/${id}`);
+  async getReport(id: string): Promise<RadiologyReport> {
+    return this.request<RadiologyReport>(`/reports/${id}`);
   }
 
   async updateReport(id: string, data: Partial<RadiologyReport>): Promise<{ report: RadiologyReport }> {

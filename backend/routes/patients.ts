@@ -1,28 +1,43 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Patient from '../models/Patient.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
+
+const getQueryString = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return undefined;
+};
 
 // All routes are protected
 router.use(authMiddleware);
 
 // Get all patients with filters and sorting
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthRequest, res) => {
   try {
     const { stage, cancer_type, sort_by, sort_order } = req.query;
-    
-    const filter = { created_by: req.user.email };
-    
-    if (stage) filter.cancer_stage = stage;
-    if (cancer_type) filter.cancer_type = new RegExp(cancer_type, 'i');
+
+    const stageValue = getQueryString(stage);
+    const cancerTypeValue = getQueryString(cancer_type);
+    const sortBy = getQueryString(sort_by);
+    const sortOrder = getQueryString(sort_order);
+
+    const filter: Record<string, unknown> = { created_by: req.user?.email };
+
+    if (stageValue) filter.cancer_stage = stageValue;
+    if (cancerTypeValue) filter.cancer_type = new RegExp(cancerTypeValue, 'i');
 
     let query = Patient.find(filter);
 
-    if (sort_by) {
-      const order = sort_order === 'desc' ? -1 : 1;
-      query = query.sort({ [sort_by]: order });
+    if (sortBy) {
+      const order = sortOrder === 'desc' ? -1 : 1;
+      query = query.sort({ [sortBy]: order });
     } else {
       query = query.sort({ created_date: -1 });
     }
@@ -44,7 +59,7 @@ router.post('/',
     body('diagnosis_date').isISO8601(),
     body('cancer_type').trim().notEmpty()
   ],
-  async (req, res) => {
+  async (req: AuthRequest, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -66,7 +81,7 @@ router.post('/',
 );
 
 // Get single patient
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const patient = await Patient.findOne({
       _id: req.params.id,
@@ -85,7 +100,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update patient
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', async (req: AuthRequest, res) => {
   try {
     const allowedUpdates = [
       'full_name', 'date_of_birth', 'gender', 'ethnicity',
@@ -119,7 +134,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // Delete patient
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const patient = await Patient.findOneAndDelete({
       _id: req.params.id,

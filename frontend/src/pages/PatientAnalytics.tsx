@@ -84,8 +84,10 @@ export default function PatientAnalytics() {
           <div className="text-gray-600">Total Patients</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="text-3xl font-bold text-green-600 mb-2">0</div>
-          <div className="text-gray-600">Active Treatments</div>
+          <div className="text-3xl font-bold text-green-600 mb-2">
+            {averageAge === null ? '—' : `${averageAge}`}
+          </div>
+          <div className="text-gray-600">Average Age</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="text-3xl font-bold text-purple-600 mb-2">
@@ -94,8 +96,10 @@ export default function PatientAnalytics() {
           <div className="text-gray-600">Completed Reports</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="text-3xl font-bold text-orange-600 mb-2">0</div>
-          <div className="text-gray-600">Pending Reviews</div>
+          <div className="text-3xl font-bold text-orange-600 mb-2">
+            {formatNumber(topCancerType.count)}
+          </div>
+          <div className="text-gray-600">Patients in Top Cancer Type</div>
         </div>
       </div>
 
