@@ -176,8 +176,13 @@ export default function PatientAnalytics() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+      <TreatmentComparisonCharts
+        outcomeData={outcomeComparisonData}
+        sideEffectData={sideEffectComparisonData}
+      />
+
+      <div className="rounded-2xl bg-white p-6 shadow-lg">
+        <h3 className="mb-4 text-xl font-semibold text-gray-900">
           Demographics Overview
         </h3>
         {isLoading ? (
