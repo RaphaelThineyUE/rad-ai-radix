@@ -65,7 +65,9 @@ export default function PatientDetail() {
         <p className="text-gray-600">Patient ID: {id}</p>
         <div className="mt-4 text-sm text-gray-500">
           {reportsLoading && 'Loading reports...'}
-          {!reportsLoading && reportsError && reportsError}
+          {!reportsLoading && reportsError && (
+            <div role="alert">{reportsError}</div>
+          )}
           {!reportsLoading && !reportsError && (
             <span>{reportCount} completed report{reportCount === 1 ? '' : 's'}</span>
           )}
