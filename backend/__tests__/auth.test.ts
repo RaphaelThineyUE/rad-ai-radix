@@ -36,7 +36,7 @@ describe('Auth Routes', () => {
 
     it('should not register duplicate email', async () => {
       const email = 'test-duplicate' + Date.now() + '@example.com';
-      
+
       await request(app)
         .post('/api/auth/register')
         .send({
