@@ -155,6 +155,17 @@ export default function PatientAnalytics() {
           </div>
           <div className="text-gray-600">Pending Outcomes</div>
         </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {metrics.map((metric) => (
+          <div key={metric.title} className="bg-white rounded-xl shadow-md p-6 space-y-3">
+            <div className="text-sm font-semibold text-gray-500">{metric.title}</div>
+            <div className={`text-3xl font-bold ${metric.accent}`}>{metric.value}</div>
+            <div className="text-xs text-gray-500">{metric.helper}</div>
+            <TrendIndicator trend={metric.trend} />
+          </div>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
