@@ -24,16 +24,27 @@ export interface Patient {
 export interface RadiologyReport {
   _id: string;
   patient_id: string;
-  report_date: string;
-  report_type: string;
-  findings: string;
-  impressions: string;
+  report_date?: string;
+  report_type?: string;
+  findings?: string;
+  impressions?: string;
   recommendations?: string;
   file_path?: string;
+  file_url?: string;
+  filename?: string;
+  file_size?: number;
   extracted_text?: string;
+  raw_text?: string;
+  summary?: string;
+  birads?: string;
+  breast_density?: string;
+  exam?: string;
+  comparison?: string;
   ai_analysis?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
+  status?: string;
+  created_by?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TreatmentRecord {
