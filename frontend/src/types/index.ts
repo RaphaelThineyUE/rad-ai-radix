@@ -10,13 +10,14 @@ export interface User {
 export interface Patient {
   _id: string;
   full_name: string;
-  status?: string;
-  date_of_birth: string;
+  created_by?: string;
+  mrn?: string;
+  date_of_birth?: string;
   gender?: 'Male' | 'Female' | 'Other';
   ethnicity?: string;
   diagnosis_date?: string;
   cancer_type?: string;
-  cancer_stage?: 'Stage 0' | 'Stage I' | 'Stage II' | 'Stage III' | 'Stage IV' | 'Unknown';
+  cancer_stage?: string;
   tumor_size_cm?: number;
   lymph_node_positive?: boolean;
   er_status?: 'Positive' | 'Negative' | 'Unknown';
@@ -24,7 +25,11 @@ export interface Patient {
   her2_status?: 'Positive' | 'Negative' | 'Unknown';
   menopausal_status?: string;
   initial_treatment_plan?: string;
-  created_by?: string;
+  contact_info?: {
+    phone?: string;
+    email?: string;
+    address?: string;
+  };
   created_date?: string;
   updated_date?: string;
   createdAt?: string;
