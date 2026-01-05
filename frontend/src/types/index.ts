@@ -11,6 +11,7 @@ export interface Patient {
   _id: string;
   mrn: string;
   full_name: string;
+  status?: string;
   date_of_birth: string;
   contact_info?: {
     phone?: string;
