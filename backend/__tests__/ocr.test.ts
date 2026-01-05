@@ -6,6 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 describe('PDF Text Extraction with OCR', () => {
+  beforeAll(() => {
+    process.env.NODE_ENV = 'test';
+  });
   // Note: These tests require actual PDF files to be present
   // In a real implementation, you would have sample PDFs in a test fixtures directory
   

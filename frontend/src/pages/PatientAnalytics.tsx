@@ -1,8 +1,11 @@
+import { useEffect, useMemo, useState } from 'react';
+import { apiClient } from '../lib/api';
 import {
   getBiomarkerStatusClasses,
   getBiomarkerStatusLabel,
   type BiomarkerStatus,
 } from '../lib/biomarkerStatus';
+import type { TreatmentRecord } from '../types';
 
 const biomarkerStatusTotals: Array<{
   status: BiomarkerStatus;
@@ -25,6 +28,43 @@ const biomarkerStatusTotals: Array<{
     description: 'Results awaiting confirmation or rerun.',
   },
 ];
+
+type TrendDirection = 'up' | 'down' | 'flat';
+
+type MetricCard = {
+  title: string;
+  value: string;
+  helper: string;
+  accent: string;
+  trend: TrendDirection;
+};
+
+const COMPLETED_STATUS_TOKENS = ['complete', 'completed', 'done', 'finished', 'resolved'];
+
+const isCompletedStatus = (status: string) => {
+  const normalized = status.toLowerCase();
+  return COMPLETED_STATUS_TOKENS.some((token) => normalized.includes(token));
+};
+
+const formatStatusLabel = (status: string) =>
+  status
+    .replace(/[_-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+
+const TrendIndicator = ({ trend }: { trend: TrendDirection }) => {
+  const trendMap: Record<TrendDirection, { label: string; className: string }> = {
+    up: { label: 'Upward trend', className: 'text-emerald-600' },
+    down: { label: 'Downward trend', className: 'text-rose-600' },
+    flat: { label: 'Stable', className: 'text-gray-500' },
+  };
+
+  const trendInfo = trendMap[trend];
+
+  return <span className={`text-xs font-semibold ${trendInfo.className}`}>{trendInfo.label}</span>;
+};
 
 export default function PatientAnalytics() {
   const [treatments, setTreatments] = useState<TreatmentRecord[]>([]);
@@ -115,6 +155,98 @@ export default function PatientAnalytics() {
     };
   }, [treatments]);
 
+  const totalPatients = useMemo(() => {
+    const uniqueIds = new Set<string>();
+    treatments.forEach((treatment) => {
+      if (treatment.patient_id) {
+        uniqueIds.add(treatment.patient_id);
+      }
+    });
+    return uniqueIds.size;
+  }, [treatments]);
+
+  const metrics = useMemo<MetricCard[]>(() => {
+    const completionRate =
+      statTotals.total === 0 ? 0 : Math.round((statTotals.completed / statTotals.total) * 100);
+
+    const topStatus = statusStats.reduce<{ name: string; value: number } | null>(
+      (current, entry) => {
+        if (!current || entry.value > current.value) {
+          return entry;
+        }
+        return current;
+      },
+      null
+    );
+
+    const topStatusShare =
+      topStatus && statTotals.total > 0
+        ? Math.round((topStatus.value / statTotals.total) * 100)
+        : 0;
+
+    const topTreatment = treatmentTypeStats.reduce<
+      { name: string; total: number; completed: number } | null
+    >((current, entry) => {
+      if (!current || entry.total > current.total) {
+        return entry;
+      }
+      return current;
+    }, null);
+
+    const completionSignal: TrendDirection =
+      completionRate >= 70 ? 'up' : completionRate >= 40 ? 'flat' : 'down';
+
+    const durationValues = treatments
+      .map((treatment) => {
+        if (!treatment.start_date || !treatment.end_date) {
+          return null;
+        }
+        const start = new Date(treatment.start_date).getTime();
+        const end = new Date(treatment.end_date).getTime();
+        if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
+          return null;
+        }
+        return Math.round((end - start) / (1000 * 60 * 60 * 24));
+      })
+      .filter((value): value is number => value !== null);
+
+    const averageDuration =
+      durationValues.length > 0
+        ? Math.round(durationValues.reduce((sum, value) => sum + value, 0) / durationValues.length)
+        : null;
+
+    return [
+      {
+        title: 'Completion rate',
+        value: `${completionRate}%`,
+        helper: 'Treatments marked complete',
+        accent: 'text-emerald-600',
+        trend: completionSignal,
+      },
+      {
+        title: 'Most common status',
+        value: topStatus ? topStatus.name : 'N/A',
+        helper: topStatus ? `${topStatusShare}% of treatments` : 'No status data yet',
+        accent: 'text-blue-600',
+        trend: 'flat',
+      },
+      {
+        title: 'Top treatment type',
+        value: topTreatment ? topTreatment.name : 'N/A',
+        helper: topTreatment ? `${topTreatment.total} recorded` : 'No treatment types yet',
+        accent: 'text-purple-600',
+        trend: 'flat',
+      },
+      {
+        title: 'Avg treatment duration',
+        value: averageDuration ? `${averageDuration} days` : 'N/A',
+        helper: averageDuration ? 'From start to end' : 'Need completed treatments',
+        accent: 'text-orange-600',
+        trend: 'flat',
+      },
+    ];
+  }, [statTotals, statusStats, treatmentTypeStats, treatments]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -127,6 +259,12 @@ export default function PatientAnalytics() {
         {isLoading && <span className="text-sm text-gray-400">Loading...</span>}
       </div>
 
+      {errorMessage && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="text-3xl font-bold text-blue-600 mb-2">
@@ -136,23 +274,23 @@ export default function PatientAnalytics() {
         </div>
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="text-3xl font-bold text-green-600 mb-2">
-            {activeTreatments}
+            {statTotals.active}
           </div>
           <div className="text-gray-600">Active Treatments</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="text-3xl font-bold text-purple-600 mb-2">
-            {completedReports}
+            {statTotals.completed}
           </div>
-          <div className="text-gray-600">Completed Reports</div>
+          <div className="text-gray-600">Completed Treatments</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="text-3xl font-bold text-orange-600 mb-2">
-            {pendingReviews}
+            {statTotals.pending}
           </div>
-          <div className="text-gray-600">Pending Reviews</div>
+          <div className="text-gray-600">Pending Treatments</div>
         </div>
-      ) : null}
+      </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric) => (

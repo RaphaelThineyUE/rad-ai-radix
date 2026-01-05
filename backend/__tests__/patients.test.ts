@@ -20,6 +20,7 @@ describe('Patient Routes', () => {
   };
 
   beforeAll(async () => {
+    process.env.NODE_ENV = 'test';
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/radreport-ai-test');

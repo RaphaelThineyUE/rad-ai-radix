@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 
 describe('Auth Routes', () => {
   beforeAll(async () => {
+    process.env.NODE_ENV = 'test';
     // Connect to test database if not already connected
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/radreport-ai-test');
