@@ -1,7 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import ReportDetail from '../components/reports/ReportDetail';
-import { apiClient } from '../lib/api';
-import type { RadiologyReport } from '../types';
+import FileDropzone from '../components/reports/FileDropzone';
 
 export default function Home() {
   const [reports, setReports] = useState<RadiologyReport[]>([]);
@@ -52,6 +49,15 @@ export default function Home() {
         <p className="text-gray-600">
           Upload and analyze breast radiology reports with AI-powered insights.
         </p>
+      </div>
+
+      <div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+          Upload a Report
+        </h3>
+        <div className="max-w-2xl">
+          <FileDropzone />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

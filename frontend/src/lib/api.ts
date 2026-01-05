@@ -116,9 +116,15 @@ class ApiClient {
   }
 
   // Report endpoints
-  async uploadFile(file: File): Promise<{ filename: string; file_url: string; file_size: number }> {
+  async uploadFile(
+    file: File,
+    patient_id?: string
+  ): Promise<{ filename: string; file_url: string; file_size: number }> {
     const formData = new FormData();
     formData.append('file', file);
+    if (patient_id) {
+      formData.append('patient_id', patient_id);
+    }
 
     const token = localStorage.getItem('token');
     const response = await fetch(`${this.baseURL}/reports/upload`, {
@@ -144,10 +150,13 @@ class ApiClient {
     });
   }
 
-  async processReport(report_id: string): Promise<RadiologyReport> {
+  async processReport(
+    report_id: string,
+    patient_id?: string
+  ): Promise<RadiologyReport> {
     return this.request<RadiologyReport>('/reports/process', {
       method: 'POST',
-      body: JSON.stringify({ report_id })
+      body: JSON.stringify({ report_id, patient_id })
     });
   }
 
