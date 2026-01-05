@@ -116,7 +116,7 @@ class ApiClient {
   }
 
   // Report endpoints
-  async uploadFile(file: File): Promise<{ file_path: string; extracted_text?: string }> {
+  async uploadFile(file: File): Promise<{ filename: string; file_url: string; file_size: number }> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -137,27 +137,27 @@ class ApiClient {
     return response.json();
   }
 
-  async createReport(data: Partial<RadiologyReport>): Promise<{ report: RadiologyReport }> {
-    return this.request<{ report: RadiologyReport }>('/reports', {
+  async createReport(data: Partial<RadiologyReport>): Promise<RadiologyReport> {
+    return this.request<RadiologyReport>('/reports', {
       method: 'POST',
       body: JSON.stringify(data)
     });
   }
 
-  async processReport(report_id: string): Promise<{ analysis: Record<string, any> }> {
-    return this.request<{ analysis: Record<string, any> }>('/reports/process', {
+  async processReport(report_id: string): Promise<RadiologyReport> {
+    return this.request<RadiologyReport>('/reports/process', {
       method: 'POST',
       body: JSON.stringify({ report_id })
     });
   }
 
-  async getReports(filters: Record<string, string> = {}): Promise<{ reports: RadiologyReport[] }> {
+  async getReports(filters: Record<string, string> = {}): Promise<RadiologyReport[]> {
     const params = new URLSearchParams(filters);
-    return this.request<{ reports: RadiologyReport[] }>(`/reports?${params}`);
+    return this.request<RadiologyReport[]>(`/reports?${params}`);
   }
 
-  async getReport(id: string): Promise<{ report: RadiologyReport }> {
-    return this.request<{ report: RadiologyReport }>(`/reports/${id}`);
+  async getReport(id: string): Promise<RadiologyReport> {
+    return this.request<RadiologyReport>(`/reports/${id}`);
   }
 
   async updateReport(id: string, data: Partial<RadiologyReport>): Promise<{ report: RadiologyReport }> {
