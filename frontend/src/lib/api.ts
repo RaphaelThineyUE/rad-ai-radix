@@ -86,9 +86,18 @@ class ApiClient {
   }
 
   // Patient endpoints
-  async getPatients(filters: Record<string, string> = {}): Promise<Patient[]> {
-    const params = new URLSearchParams(filters);
-    return this.request<Patient[]>(`/patients?${params}`);
+  async getPatients(filters: Record<string, string | undefined> = {}): Promise<Patient[]> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) {
+        params.append(key, value);
+      }
+    });
+    const queryString = params.toString();
+    const response = await this.request<Patient[] | { patients: Patient[] }>(
+      `/patients${queryString ? `?${queryString}` : ''}`
+    );
+    return Array.isArray(response) ? response : response.patients;
   }
 
   async createPatient(data: Partial<Patient>): Promise<Patient> {

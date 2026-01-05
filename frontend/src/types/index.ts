@@ -10,6 +10,7 @@ export interface User {
 export interface Patient {
   _id: string;
   full_name: string;
+  status?: string;
   date_of_birth: string;
   gender?: 'Male' | 'Female' | 'Other';
   ethnicity?: string;
