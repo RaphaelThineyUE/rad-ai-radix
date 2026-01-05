@@ -7,9 +7,18 @@ import { apiClient } from '../lib/api';
 import type { Patient } from '../types';
 
 const formatDate = (value?: string) => {
-  if (!value) return '—';
+  if (!value) {
+    return '—';
+  }
+
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+  const time = date.getTime();
+
+  if (Number.isNaN(time)) {
+    return value;
+  }
+
+  return date.toLocaleDateString();
 };
 
 export default function PatientList() {
