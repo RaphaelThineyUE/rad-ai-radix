@@ -109,6 +109,8 @@ export default function PatientList() {
           </div>
         )}
       </div>
+
+      <AddPatientDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} />
     </div>
   );
 }
