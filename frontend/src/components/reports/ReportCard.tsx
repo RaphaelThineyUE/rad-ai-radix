@@ -58,7 +58,10 @@ export default function ReportCard({ report, onClick }: ReportCardProps) {
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+        if (event.key === 'Enter') {
+          onClick?.();
+        } else if (event.key === ' ') {
+          event.preventDefault();
           onClick?.();
         }
       }}
