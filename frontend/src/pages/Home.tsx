@@ -126,7 +126,11 @@ export default function Home() {
         <p className="text-xs text-gray-500">
           {processingState.status === 'error'
             ? processingState.errorMessage
-            : 'AI processing status is centralized here so the UI stays in sync.'}
+            : processingState.status === 'processing'
+            ? 'Analyzing report with AI...'
+            : processingState.status === 'success'
+            ? 'Analysis complete. Review the AI findings below.'
+            : 'Enter a radiology report above and click "Run AI Analysis" to get started.'}
         </p>
         {analysisResult ? (
           <div className="rounded-xl bg-gray-50 p-4 text-sm text-gray-700">
