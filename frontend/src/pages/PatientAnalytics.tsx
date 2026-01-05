@@ -181,7 +181,18 @@ export default function PatientAnalytics() {
             </div>
           </div>
 
-          {errorMessage ? (
+          {isLoading ? (
+            <div className="h-72 flex items-center justify-center">
+              <div className="space-y-4 w-full max-w-md">
+                <div className="h-48 w-48 mx-auto rounded-full bg-gray-200 animate-pulse"></div>
+                <div className="flex justify-center gap-4">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ) : errorMessage ? (
             <div className="text-center py-12 text-red-500">{errorMessage}</div>
           ) : statusStats.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
@@ -231,7 +242,22 @@ export default function PatientAnalytics() {
             </div>
           </div>
 
-          {errorMessage ? (
+          {isLoading ? (
+            <div className="h-72 flex items-center justify-center">
+              <div className="space-y-4 w-full px-6">
+                <div className="flex items-end justify-around h-48">
+                  <div className="h-32 w-16 bg-gray-200 rounded-t animate-pulse"></div>
+                  <div className="h-40 w-16 bg-gray-200 rounded-t animate-pulse"></div>
+                  <div className="h-24 w-16 bg-gray-200 rounded-t animate-pulse"></div>
+                  <div className="h-36 w-16 bg-gray-200 rounded-t animate-pulse"></div>
+                </div>
+                <div className="flex justify-center gap-4">
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ) : errorMessage ? (
             <div className="text-center py-12 text-red-500">{errorMessage}</div>
           ) : treatmentTypeStats.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
