@@ -57,7 +57,10 @@ export default function PatientList() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Patients</h2>
-        <button className="px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition">
+        <button
+          className="px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
+          onClick={() => setIsDialogOpen(true)}
+        >
           Add Patient
         </button>
       </div>
@@ -131,6 +134,8 @@ export default function PatientList() {
           </div>
         )}
       </div>
+
+      <AddPatientDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} />
     </div>
   );
 }
