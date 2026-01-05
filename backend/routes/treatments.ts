@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import TreatmentRecord from '../models/TreatmentRecord.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -9,13 +9,14 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // Get all treatments with filters
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthRequest, res) => {
   try {
     const { patient_id } = req.query;
-    
-    const filter = { created_by: req.user.email };
-    
-    if (patient_id) filter.patient_id = patient_id;
+
+    const patientId = typeof patient_id === 'string' ? patient_id : Array.isArray(patient_id) ? patient_id[0] : undefined;
+    const filter: Record<string, unknown> = { created_by: req.user?.email };
+
+    if (patientId) filter.patient_id = patientId;
 
     const treatments = await TreatmentRecord.find(filter)
       .populate('patient_id', 'full_name')
@@ -35,7 +36,7 @@ router.post('/',
     body('treatment_type').isIn(['Surgery', 'Chemotherapy', 'Radiation', 'Hormone Therapy', 'Targeted Therapy', 'Immunotherapy', 'Other']),
     body('treatment_start_date').isISO8601()
   ],
-  async (req, res) => {
+  async (req: AuthRequest, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -61,7 +62,7 @@ router.post('/',
 );
 
 // Get single treatment
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const treatment = await TreatmentRecord.findOne({
       _id: req.params.id,
@@ -80,7 +81,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update treatment
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', async (req: AuthRequest, res) => {
   try {
     const allowedUpdates = [
       'treatment_type', 'treatment_start_date', 'treatment_end_date',
@@ -112,7 +113,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // Delete treatment
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const treatment = await TreatmentRecord.findOneAndDelete({
       _id: req.params.id,
