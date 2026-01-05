@@ -81,9 +81,7 @@ export default function PatientAnalytics() {
     const counts = treatments.reduce<
       Record<string, { name: string; total: number; completed: number }>
     >((acc, treatment) => {
-      const typeLabel = treatment.treatment_type?.trim()
-        ? treatment.treatment_type.trim()
-        : 'Unspecified';
+      const typeLabel = treatment.treatment_type?.trim() || 'Unspecified';
       if (!acc[typeLabel]) {
         acc[typeLabel] = { name: typeLabel, total: 0, completed: 0 };
       }
