@@ -165,7 +165,16 @@ class ApiClient {
   async getReports(filters: Record<string, string> = {}): Promise<RadiologyReport[]> {
     const params = new URLSearchParams(filters);
     const response = await this.request<RadiologyReport[] | { reports: RadiologyReport[] }>(`/reports?${params}`);
-    return Array.isArray(response) ? response : response.reports;
+
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (response && Array.isArray((response as any).reports)) {
+      return (response as any).reports;
+    }
+
+    throw new Error('Unexpected response format from /reports endpoint');
   }
 
   async getReport(id: string): Promise<{ report: RadiologyReport }> {
