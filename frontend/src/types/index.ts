@@ -9,9 +9,9 @@ export interface User {
 
 export interface Patient {
   _id: string;
-  mrn: string;
   full_name: string;
   date_of_birth: string;
+  cancer_stage?: string;
   contact_info?: {
     phone?: string;
     email?: string;
@@ -26,13 +26,37 @@ export interface Patient {
 export interface RadiologyReport {
   _id: string;
   patient_id: string;
+  filename?: string;
+  file_url?: string;
+  file_size?: number;
+  status?: 'pending' | 'processing' | 'completed' | 'failed';
+  summary?: string;
   report_date: string;
   report_type: string;
-  findings: string;
+  findings: string | Array<{
+    laterality?: string;
+    location?: string;
+    description?: string;
+    assessment?: string;
+    evidence?: string[];
+  }>;
   impressions: string;
-  recommendations?: string;
+  recommendations?: string | Array<{
+    action?: string;
+    timeframe?: string;
+    evidence?: string[];
+  }>;
   file_path?: string;
+  file_url?: string;
+  filename?: string;
+  file_size?: number;
   extracted_text?: string;
+  raw_text?: string;
+  summary?: string;
+  birads?: string;
+  breast_density?: string;
+  exam?: string;
+  comparison?: string;
   ai_analysis?: Record<string, any>;
   status?: 'pending' | 'processing' | 'completed' | 'failed';
   processing_time_ms?: number;
