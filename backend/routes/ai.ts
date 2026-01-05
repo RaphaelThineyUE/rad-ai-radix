@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { analyzeReport, generateSummary, consolidateReports, compareTreatments } from '../services/aiService.js';
 import RadiologyReport from '../models/RadiologyReport.js';
 import Patient from '../models/Patient.js';
@@ -13,7 +13,7 @@ router.use(authMiddleware);
 // Analyze report
 router.post('/analyze-report',
   [body('pdf_text').notEmpty()],
-  async (req, res) => {
+  async (req: AuthRequest, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -34,7 +34,7 @@ router.post('/analyze-report',
 // Generate summary
 router.post('/generate-summary',
   [body('extracted_data').notEmpty()],
-  async (req, res) => {
+  async (req: AuthRequest, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -55,7 +55,7 @@ router.post('/generate-summary',
 // Consolidate reports
 router.post('/consolidate-reports',
   [body('patient_id').notEmpty()],
-  async (req, res) => {
+  async (req: AuthRequest, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -67,7 +67,7 @@ router.post('/consolidate-reports',
       // Get all completed reports for this patient
       const reports = await RadiologyReport.find({
         patient_id,
-        created_by: req.user.email,
+        created_by: req.user?.email,
         status: 'completed'
       }).sort({ created_date: 1 });
 
@@ -98,7 +98,7 @@ router.post('/compare-treatments',
     body('patient_id').notEmpty(),
     body('treatment_options').isArray({ min: 1, max: 5 })
   ],
-  async (req, res) => {
+  async (req: AuthRequest, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -110,7 +110,7 @@ router.post('/compare-treatments',
       // Get patient data
       const patient = await Patient.findOne({
         _id: patient_id,
-        created_by: req.user.email
+        created_by: req.user?.email
       });
 
       if (!patient) {
@@ -126,7 +126,7 @@ router.post('/compare-treatments',
         tumor_size_cm: patient.tumor_size_cm,
         lymph_node_positive: patient.lymph_node_positive,
         menopausal_status: patient.menopausal_status,
-        age: Math.floor((Date.now() - patient.date_of_birth) / (365.25 * 24 * 60 * 60 * 1000))
+        age: Math.floor((Date.now() - new Date(patient.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
       };
 
       const comparison = await compareTreatments(patientData, treatment_options);
