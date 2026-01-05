@@ -89,10 +89,17 @@ class ApiClient {
   async getPatients(filters: Record<string, string> = {}): Promise<Patient[]> {
     const params = new URLSearchParams(filters);
     const response = await this.request<Patient[] | { patients: Patient[] }>(`/patients?${params}`);
+
     if (Array.isArray(response)) {
       return response;
     }
-    return response.patients ?? [];
+
+    if (response && Array.isArray((response as { patients?: Patient[] }).patients)) {
+      return (response as { patients: Patient[] }).patients;
+    }
+
+    console.error('Unexpected patients response format:', response);
+    return [];
   }
 
   async createPatient(data: Partial<Patient>): Promise<Patient> {
@@ -185,7 +192,17 @@ class ApiClient {
 
   async getReports(filters: Record<string, string> = {}): Promise<RadiologyReport[]> {
     const params = new URLSearchParams(filters);
-    return this.request<RadiologyReport[]>(`/reports?${params}`);
+    const response = await this.request<RadiologyReport[] | { reports: RadiologyReport[] }>(`/reports?${params}`);
+
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (response && Array.isArray((response as any).reports)) {
+      return (response as any).reports;
+    }
+
+    throw new Error('Unexpected response format from /reports endpoint');
   }
 
   async getReport(id: string): Promise<RadiologyReport> {
