@@ -1,63 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import PatientTimeline, {
-  PatientTimelineEvent
-} from '../components/patients/PatientTimeline';
-import { apiClient } from '../lib/api';
-import type { Patient, RadiologyReport, TreatmentRecord } from '../types';
-
-interface PatientDetailResponse {
-  patient: Patient;
-  reports: RadiologyReport[];
-  treatments: TreatmentRecord[];
-}
-
-const formatDateValue = (value?: string) => {
-  if (!value) {
-    return 'Unknown';
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(parsed);
-};
-
-const toTimestamp = (value: string) => {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
-};
-
-const extractPatient = (response: unknown): Patient | null => {
-  if (response && typeof response === 'object' && 'patient' in response) {
-    return (response as { patient: Patient }).patient;
-  }
-  return response as Patient;
-};
-
-const extractReports = (response: unknown): RadiologyReport[] => {
-  if (Array.isArray(response)) {
-    return response;
-  }
-  if (response && typeof response === 'object' && 'reports' in response) {
-    return (response as { reports: RadiologyReport[] }).reports || [];
-  }
-  return [];
-};
-
-const extractTreatments = (response: unknown): TreatmentRecord[] => {
-  if (Array.isArray(response)) {
-    return response;
-  }
-  if (response && typeof response === 'object' && 'treatments' in response) {
-    return (response as { treatments: TreatmentRecord[] }).treatments || [];
-  }
-  return [];
-};
+import TreatmentComparison from '../components/treatments/TreatmentComparison';
 
 export default function PatientDetail() {
   const { id } = useParams();
@@ -201,10 +144,7 @@ export default function PatientDetail() {
           </div>
         )}
       </div>
-
-      {!isLoading && !errorMessage && (
-        <PatientTimeline events={timelineEvents} />
-      )}
+      <TreatmentComparison patientId={id} />
     </div>
   );
 }
