@@ -36,9 +36,17 @@ const getStatusClasses = (status?: string): string => {
 
 export default function ReportCard({ report, onClick }: ReportCardProps) {
   const createdDate = report.created_date ?? report.createdAt;
-  const formattedDate = createdDate
-    ? format(new Date(createdDate), 'MMM d, yyyy')
-    : 'Unknown date';
+  const formattedDate = (() => {
+    if (!createdDate) {
+      return 'Unknown date';
+    }
+
+    try {
+      return format(new Date(createdDate), 'MMM d, yyyy');
+    } catch {
+      return 'Invalid date';
+    }
+  })();
   const biradsValue = report.birads?.value;
 
   return (
