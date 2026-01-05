@@ -24,16 +24,16 @@ export interface Patient {
 export interface RadiologyReport {
   _id: string;
   patient_id: string;
-  report_date?: string;
-  report_type?: string;
-  findings?: string | Array<{
+  report_date: string;
+  report_type: string;
+  findings: string | Array<{
     laterality?: string;
     location?: string;
     description?: string;
     assessment?: string;
     evidence?: string[];
   }>;
-  impressions?: string;
+  impressions: string;
   recommendations?: string | Array<{
     action?: string;
     timeframe?: string;
