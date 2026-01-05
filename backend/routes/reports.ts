@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import RadiologyReport from '../models/RadiologyReport.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { extractPDFText, analyzeReport } from '../services/aiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,7 +29,7 @@ const upload = multer({
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF files are allowed'), false);
+      cb(new Error('Only PDF files are allowed'));
     }
   },
   limits: {
@@ -41,7 +41,7 @@ const upload = multer({
 router.use(authMiddleware);
 
 // Upload PDF file
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -61,7 +61,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 // Create report record
-router.post('/', async (req, res) => {
+router.post('/', async (req: AuthRequest, res) => {
   try {
     const { patient_id, filename, file_url, file_size } = req.body;
 
@@ -72,11 +72,14 @@ router.post('/', async (req, res) => {
     // Check for duplicate filename for this patient
     const existingReport = await RadiologyReport.findOne({
       patient_id,
-      filename
+      filename,
+      created_by: req.user.email
     });
 
     if (existingReport) {
-      return res.status(400).json({ error: 'A report with this filename already exists for this patient' });
+      return res.status(409).json({
+        error: `A report named "${filename}" already exists for this patient.`
+      });
     }
 
     const report = new RadiologyReport({
@@ -97,7 +100,7 @@ router.post('/', async (req, res) => {
 });
 
 // Process report (extract text and analyze)
-router.post('/process', async (req, res) => {
+router.post('/process', async (req: AuthRequest, res) => {
   try {
     const { report_id } = req.body;
 
@@ -167,14 +170,17 @@ router.post('/process', async (req, res) => {
 });
 
 // Get all reports with filters
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthRequest, res) => {
   try {
     const { patient_id, status } = req.query;
-    
-    const filter = { created_by: req.user.email };
-    
-    if (patient_id) filter.patient_id = patient_id;
-    if (status) filter.status = status;
+
+    const patientId = typeof patient_id === 'string' ? patient_id : Array.isArray(patient_id) ? patient_id[0] : undefined;
+    const statusValue = typeof status === 'string' ? status : Array.isArray(status) ? status[0] : undefined;
+
+    const filter: Record<string, unknown> = { created_by: req.user?.email };
+
+    if (patientId) filter.patient_id = patientId;
+    if (statusValue) filter.status = statusValue;
 
     const reports = await RadiologyReport.find(filter)
       .populate('patient_id', 'full_name')
@@ -188,7 +194,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get single report
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const report = await RadiologyReport.findOne({
       _id: req.params.id,
@@ -207,7 +213,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update report
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', async (req: AuthRequest, res) => {
   try {
     const allowedUpdates = ['summary', 'birads', 'findings', 'recommendations', 'red_flags'];
     
@@ -236,7 +242,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // Delete report
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const report = await RadiologyReport.findOne({
       _id: req.params.id,
