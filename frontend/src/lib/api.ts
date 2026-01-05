@@ -91,19 +91,19 @@ class ApiClient {
     return this.request<Patient[]>(`/patients?${params}`);
   }
 
-  async createPatient(data: Partial<Patient>): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>('/patients', {
+  async createPatient(data: Partial<Patient>): Promise<Patient> {
+    return this.request<Patient>('/patients', {
       method: 'POST',
       body: JSON.stringify(data)
     });
   }
 
-  async getPatient(id: string): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>(`/patients/${id}`);
+  async getPatient(id: string): Promise<Patient> {
+    return this.request<Patient>(`/patients/${id}`);
   }
 
-  async updatePatient(id: string, data: Partial<Patient>): Promise<{ patient: Patient }> {
-    return this.request<{ patient: Patient }>(`/patients/${id}`, {
+  async updatePatient(id: string, data: Partial<Patient>): Promise<Patient> {
+    return this.request<Patient>(`/patients/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     });

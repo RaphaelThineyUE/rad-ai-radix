@@ -1,118 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import AddPatientDialog from '../components/AddPatientDialog';
-import { apiClient } from '../lib/api';
-import type { Patient } from '../types';
-
-const PAGE_SIZE = 10;
-const stageOptions: Array<Patient['cancer_stage'] | ''> = [
-  '',
-  'Unknown',
-  'Stage 0',
-  'Stage I',
-  'Stage II',
-  'Stage III',
-  'Stage IV'
-];
-
-function useDebouncedValue<T>(value: T, delay = 400) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => window.clearTimeout(timer);
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+import { useState } from 'react';
+import AddPatientDialog from '../components/patients/AddPatientDialog';
 
 export default function PatientList() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchInput, setSearchInput] = useState('');
-  const [cancerTypeInput, setCancerTypeInput] = useState('');
-  const [stageFilter, setStageFilter] = useState<Patient['cancer_stage'] | ''>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const debouncedSearch = useDebouncedValue(searchInput);
-  const debouncedCancerType = useDebouncedValue(cancerTypeInput);
-
-  useEffect(() => {
-    const fetchPatients = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const params = new URLSearchParams();
-        if (debouncedCancerType.trim()) {
-          params.set('cancer_type', debouncedCancerType.trim());
-        }
-        if (stageFilter) {
-          params.set('stage', stageFilter);
-        }
-
-        const query = params.toString();
-        const data = await apiClient.request<Patient[]>(`/patients${query ? `?${query}` : ''}`);
-        setPatients(data);
-      } catch (fetchError) {
-        const message = fetchError instanceof Error ? fetchError.message : 'Unable to load patients.';
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPatients();
-  }, [debouncedCancerType, stageFilter, refreshKey]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, debouncedCancerType, stageFilter]);
-
-  const filteredPatients = useMemo(() => {
-    const term = debouncedSearch.trim().toLowerCase();
-    if (!term) {
-      return patients;
-    }
-
-    return patients.filter((patient) => {
-      const fields = [
-        patient.full_name,
-        patient.cancer_type,
-        patient.cancer_stage,
-        patient._id
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return fields.includes(term);
-    });
-  }, [debouncedSearch, patients]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredPatients.length / PAGE_SIZE));
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const pagePatients = filteredPatients.slice(pageStart, pageStart + PAGE_SIZE);
-
-  const handlePatientCreated = (patient: Patient) => {
-    setPatients((prev) => [patient, ...prev]);
-    setRefreshKey((prev) => prev + 1);
-  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Patients</h2>
-          <p className="text-sm text-gray-500">Search, filter, and manage your patient list.</p>
-        </div>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Patients</h2>
         <button
+          className="px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
           onClick={() => setIsDialogOpen(true)}
-          className="self-start rounded-xl bg-pink-600 px-4 py-2 text-white transition hover:bg-pink-700 md:self-auto"
         >
           Add Patient
         </button>
@@ -232,11 +130,7 @@ export default function PatientList() {
         )}
       </div>
 
-      <AddPatientDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onCreated={handlePatientCreated}
-      />
+      <AddPatientDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} />
     </div>
   );
 }
